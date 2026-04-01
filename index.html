@@ -584,7 +584,8 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <div class="card">
     <div class="card-title">🏦 Conta Provisionada</div>
     <div class="dre-row"><span class="dre-label">Saldo inicial</span><span class="dre-value" id="dre-prov-ini">R$ 110.344,10</span></div>
-    <div class="dre-row"><span class="dre-label">Entradas</span><span class="dre-value" style="color:var(--green);" id="dre-prov-ent">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Entradas (transfers. diárias + manual)</span><span class="dre-value" style="color:var(--green);" id="dre-prov-ent">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label" style="font-size:10px;color:var(--text-3);" id="dre-prov-ent-detalhe"></span></div>
     <div class="dre-row"><span class="dre-label">(-) Folha + Encargos</span><span class="dre-value" style="color:var(--red);" id="dre-prov-folha">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">(-) Aluguel</span><span class="dre-value" style="color:var(--red);" id="dre-prov-aluguel">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">(-) Energia/Água/Gás</span><span class="dre-value" style="color:var(--red);" id="dre-prov-energia">R$ 0,00</span></div>
@@ -687,6 +688,9 @@ function recalcularSaldos() {
   S.semanais.forEach(l => { cc += l.valor; });
   S.saidasCC.forEach(l => { cc -= l.valor; });
   let prov = PROV_INI;
+  // Transferências diárias entram na provisionada
+  S.dias.forEach(d => { prov += (d.retProv||0); });
+  // Gastos e entradas manuais
   S.prov.forEach(l => { if(l.tipo==='saida') prov -= l.valor; else prov += l.valor; });
   S.saldoCC = cc;
   S.saldoProv = prov;
@@ -952,11 +956,17 @@ function renderDRE(){
   const mlEl=document.getElementById('dre-ml');if(mlEl){mlEl.textContent=recTotal>0?ml.toFixed(2)+'%':'—';mlEl.style.color=ml>=15?'var(--green)':ml>=8?'var(--brand)':'var(--red)';}
   // Pró-labore: preenchido manualmente no fechamento mensal
   // (campos prol-boliche, prol-taxa, prol-mensal, prol-prov)
-  const provEnt=somaT(S.prov,'entrada'),provFol=somaT(S.prov,'saida',['Folha de Pagamento','Vale Transporte','13º Salário','Férias','FGTS','INSS']);
+  // Transferências diárias (R$3k/dia) entram automaticamente na provisionada
+  const transf=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+(d.retProv||0),0);
+  const provEntManual=somaT(S.prov,'entrada');
+  const provEnt=provEntManual+transf,provFol=somaT(S.prov,'saida',['Folha de Pagamento','Vale Transporte','13º Salário','Férias','FGTS','INSS']);
   const provAlug=somaT(S.prov,'saida',['Aluguel']),provEn=somaT(S.prov,'saida',['Energia Elétrica','Água','Gás']);
   const provServ=somaT(S.prov,'saida',['Contador','Sistema','Internet']),provJur=somaT(S.prov,'saida',['Honorários Dra. Vanusa','Processo Trabalhista']);
   const provOut=somaT(S.prov,'saida',['Manutenção','Marketing','Outros Provisionada']);
-  sv('dre-prov-ent',provEnt,'var(--green)');sv('dre-prov-folha',provFol,'var(--red)');sv('dre-prov-aluguel',provAlug,'var(--red)');sv('dre-prov-energia',provEn,'var(--red)');sv('dre-prov-servicos',provServ,'var(--red)');sv('dre-prov-juridico',provJur,'var(--red)');sv('dre-prov-outros',provOut,'var(--red)');sv('dre-prov-saldo',S.saldoProv,'var(--brand)');
+  sv('dre-prov-ent',provEnt,'var(--green)');
+  // Mostrar detalhamento das entradas
+  const elProvEntDetalhe=document.getElementById('dre-prov-ent-detalhe');
+  if(elProvEntDetalhe) elProvEntDetalhe.textContent='(R$3k/dia: '+fmt(transf)+' + manual: '+fmt(provEntManual)+')';sv('dre-prov-folha',provFol,'var(--red)');sv('dre-prov-aluguel',provAlug,'var(--red)');sv('dre-prov-energia',provEn,'var(--red)');sv('dre-prov-servicos',provServ,'var(--red)');sv('dre-prov-juridico',provJur,'var(--red)');sv('dre-prov-outros',provOut,'var(--red)');sv('dre-prov-saldo',S.saldoProv,'var(--brand)');
 }
 
 function calcProlabore(){
