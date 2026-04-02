@@ -266,6 +266,24 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
 
   <div class="card">
+    <div class="card-title">👥 Público e Ticket Médio</div>
+    <div class="retirada-grid">
+      <div class="retirada-item">
+        <div class="retirada-label">ADULTOS</div>
+        <div class="retirada-value" id="d-adultos-kpi">0</div>
+      </div>
+      <div class="retirada-item">
+        <div class="retirada-label">CRIANÇAS</div>
+        <div class="retirada-value" id="d-criancas-kpi">0</div>
+      </div>
+      <div class="retirada-item" style="background:var(--brand-light);border-color:var(--brand);">
+        <div class="retirada-label" style="color:#92400E;">TICKET MÉDIO</div>
+        <div class="retirada-value" id="d-ticket-kpi" style="color:var(--brand);">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="card-title">📋 Últimos lançamentos</div>
     <div id="dash-ultimos"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:12px 0;">Nenhum lançamento ainda</p></div>
   </div>
@@ -301,7 +319,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div id="aviso-mes" style="display:none;background:var(--brand-light);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#92400E;font-weight:600;"></div>
     <div class="form-group">
       <label class="form-label">Faturamento total (R$)</label>
-      <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou()">
+      <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou();calcTicket()">
     </div>
 
     <div class="section-label">Custos do dia</div>
@@ -348,6 +366,24 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="resultado-box" id="resultado-box">
       <span class="resultado-label">💰 Sobrou no dia</span>
       <span class="resultado-value money" id="d-sobrou">R$ 0,00</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👥 Público do dia</div>
+    <div class="retirada-grid">
+      <div class="retirada-item">
+        <div class="retirada-label">ADULTOS</div>
+        <input type="number" style="width:100%;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--bg);font-family:'Nunito',sans-serif;outline:none;text-align:center;" id="d-adultos" placeholder="0" min="0" oninput="calcTicket()">
+      </div>
+      <div class="retirada-item">
+        <div class="retirada-label">CRIANÇAS</div>
+        <input type="number" style="width:100%;padding:4px 6px;border:1.5px solid var(--border);border-radius:6px;font-size:16px;font-weight:700;background:var(--bg);font-family:'Nunito',sans-serif;outline:none;text-align:center;" id="d-criancas" placeholder="0" min="0" oninput="calcTicket()">
+      </div>
+      <div class="retirada-item" id="ticket-box" style="background:var(--brand-light);border-color:var(--brand);">
+        <div class="retirada-label" style="color:#92400E;">TICKET MÉDIO</div>
+        <div class="retirada-value money" id="d-ticket" style="color:var(--brand);font-size:16px;">—</div>
+      </div>
     </div>
   </div>
 
@@ -424,9 +460,127 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
 </div>
 
+<!-- ========== CMV ========== -->
+<div id="p-cmv" style="display:none;" class="page-content">
+  <div class="page-title">CMV <span class="page-badge">semanal · estoques</span></div>
+
+  <div class="card-brand">
+    <div class="card-title" style="color:var(--brand);">📦 Lançar CMV semanal</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Semana / período</label>
+        <input type="text" class="form-input" id="cmv-semana" placeholder="S1 · 01-07/04">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Centro</label>
+        <select class="form-input" id="cmv-centro" onchange="atualizarCMVPreview()">
+          <option value="Bar">🍺 Bar</option>
+          <option value="Cozinha">🍳 Cozinha</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Mês de competência</label>
+        <select class="form-input" id="cmv-mes">
+          <option value="2025-03">Março 2025</option>
+          <option value="2025-04" selected>Abril 2025</option>
+          <option value="2025-05">Maio 2025</option>
+          <option value="2025-06">Junho 2025</option>
+          <option value="2025-07">Julho 2025</option>
+          <option value="2025-08">Agosto 2025</option>
+          <option value="2025-09">Setembro 2025</option>
+          <option value="2025-10">Outubro 2025</option>
+          <option value="2025-11">Novembro 2025</option>
+          <option value="2025-12">Dezembro 2025</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Faturamento do centro (R$)</label>
+        <input type="number" class="form-input" id="cmv-fat" placeholder="0,00" step="0.01" oninput="atualizarCMVPreview()">
+      </div>
+    </div>
+
+    <div class="section-label">Estoques e compras</div>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div class="custo-row">
+        <span class="custo-label" style="color:var(--text);">📥 Estoque Inicial (EI)</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmv-ei" placeholder="0" step="0.01" oninput="atualizarCMVPreview()"></div>
+      </div>
+      <div class="custo-row">
+        <span class="custo-label" style="color:var(--text);">🛒 Compras</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmv-compras" placeholder="0" step="0.01" oninput="atualizarCMVPreview()"></div>
+      </div>
+      <div class="custo-row">
+        <span class="custo-label" style="color:var(--text);">🗑️ Desperdício</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmv-desp" placeholder="0" step="0.01" oninput="atualizarCMVPreview()"></div>
+      </div>
+      <div class="custo-row">
+        <span class="custo-label" style="color:var(--text);">📤 Estoque Final (EF)</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmv-ef" placeholder="0" step="0.01" oninput="atualizarCMVPreview()"></div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border-radius:8px;padding:4px 12px;margin-bottom:8px;font-size:10px;color:var(--text-3);font-weight:600;">
+      Fórmula: EI + Compras + Desperdício − EF
+    </div>
+
+    <!-- PREVIEW CMV -->
+    <div id="cmv-preview-box" style="display:none;border-radius:10px;padding:14px;margin-bottom:10px;border:2px solid;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div style="text-align:center;">
+          <div id="cmv-pct-val" style="font-size:28px;font-weight:800;">0%</div>
+          <div style="font-size:10px;color:var(--text-3);font-weight:600;">CMV%</div>
+        </div>
+        <div style="text-align:center;">
+          <div id="cmv-rs-val" style="font-size:16px;font-weight:700;">R$ 0,00</div>
+          <div style="font-size:10px;color:var(--text-3);font-weight:600;">CMV (R$)</div>
+        </div>
+        <div style="text-align:center;">
+          <div id="cmv-meta-label" style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;">—</div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:2px;font-weight:600;" id="cmv-meta-txt"></div>
+        </div>
+      </div>
+      <!-- BARRA DE PROGRESSO -->
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-bottom:4px;">
+          <span>0%</span><span id="cmv-meta-line">Meta</span><span>60%</span>
+        </div>
+        <div style="height:10px;background:var(--border);border-radius:5px;overflow:hidden;">
+          <div id="cmv-barra" style="height:100%;border-radius:5px;transition:width 0.3s;"></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-brand" onclick="salvarCMV()">Salvar CMV</button>
+  </div>
+
+  <!-- HISTÓRICO CMV -->
+  <div class="card">
+    <div class="card-title">📋 CMVs lançados</div>
+    <div id="lista-cmv"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Nenhum CMV lançado ainda</p></div>
+  </div>
+</div>
+
 <!-- ========== SAÍDAS CC ========== -->
 <div id="p-saidas" style="display:none;" class="page-content">
-  <div class="page-title">Saídas Extras <span class="page-badge">compras · outros</span></div>
+  <div class="page-title">Saídas <span class="page-badge">compras · outros</span></div>
+
+  <div class="card" style="border:1.5px solid var(--brand);">
+    <div class="card-title" style="color:var(--brand);">📲 Copiar resumo semanal para WhatsApp</div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group">
+        <label class="form-label">De</label>
+        <input type="date" class="form-input" id="copy-de">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Até</label>
+        <input type="date" class="form-input" id="copy-ate">
+      </div>
+    </div>
+    <button class="btn btn-brand" onclick="copiarSaidasWhatsapp()">📲 Gerar e copiar mensagem</button>
+    <div id="copy-preview" style="display:none;margin-top:10px;background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--text);border:1.5px solid var(--border);"></div>
+  </div>
 
   <div class="card-red">
     <div class="card-title" style="color:var(--red);">💸 Lançar saída — Conta Corrente</div>
@@ -543,6 +697,12 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="dre-row"><span class="dre-label">Compras / saídas extras</span><span class="dre-value" style="color:var(--red);" id="dre-extras">R$ 0,00</span></div>
     <div class="dre-row total"><span class="dre-label">Total custos</span><span class="dre-value" style="color:var(--red);" id="dre-custos-total">R$ 0,00</span></div>
 
+    <div class="dre-section-title">Público e Ticket Médio</div>
+    <div class="dre-row"><span class="dre-label">Total adultos</span><span class="dre-value" id="dre-adultos">0</span></div>
+    <div class="dre-row"><span class="dre-label">Total crianças</span><span class="dre-value" id="dre-criancas">0</span></div>
+    <div class="dre-row"><span class="dre-label">Público total</span><span class="dre-value" id="dre-publico">0</span></div>
+    <div class="dre-row"><span class="dre-label">Ticket médio (por adulto)</span><span class="dre-value" id="dre-ticket" style="font-size:14px;font-weight:800;">—</span></div>
+
     <div class="dre-section-title">Resultado CC</div>
     <div class="dre-row total"><span class="dre-label">Saldo conta corrente</span><span class="dre-value" style="font-size:14px;" id="dre-saldo-cc">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Margem líquida</span><span class="dre-value" id="dre-ml">—</span></div>
@@ -582,6 +742,11 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   </div>
 
   <div class="card">
+    <div class="card-title">📦 CMV — Custo de Mercadoria Vendida</div>
+    <div id="dre-cmv-lista"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:8px 0;">Nenhum CMV lançado</p></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">🏦 Conta Provisionada</div>
     <div class="dre-row"><span class="dre-label">Saldo inicial</span><span class="dre-value" id="dre-prov-ini">R$ 110.344,10</span></div>
     <div class="dre-row"><span class="dre-label">Entradas (transfers. diárias + manual)</span><span class="dre-value" style="color:var(--green);" id="dre-prov-ent">R$ 0,00</span></div>
@@ -598,13 +763,80 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <button class="btn btn-outline" onclick="copiarDRE()">📋 Copiar resumo DRE</button>
 </div>
 
+<!-- ========== IMPORTAR ========== -->
+<div id="p-import" style="display:none;" class="page-content">
+  <div class="page-title">Importar Saídas <span class="page-badge">cola do WhatsApp</span></div>
+
+  <div class="card-brand">
+    <div class="card-title" style="color:var(--brand);">📋 Cole a mensagem do grupo</div>
+    <p style="font-size:11px;color:var(--text-3);margin-bottom:10px;font-weight:500;">
+      Cole exatamente como você manda no WhatsApp.<br>
+      Formato: <strong>Fornecedor (categoria)… valor</strong>
+    </p>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group">
+        <label class="form-label">Data das saídas</label>
+        <input type="date" class="form-input" id="imp-data">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mês de competência</label>
+        <select class="form-input" id="imp-mes">
+          <option value="2025-03">Março 2025</option>
+          <option value="2025-04" selected>Abril 2025</option>
+          <option value="2025-05">Maio 2025</option>
+          <option value="2025-06">Junho 2025</option>
+          <option value="2025-07">Julho 2025</option>
+          <option value="2025-08">Agosto 2025</option>
+          <option value="2025-09">Setembro 2025</option>
+          <option value="2025-10">Outubro 2025</option>
+          <option value="2025-11">Novembro 2025</option>
+          <option value="2025-12">Dezembro 2025</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mensagem do WhatsApp</label>
+      <textarea class="form-input" id="imp-texto" rows="8" placeholder="Heineken (bar)… 437,43&#10;Mega Brasil (cozinha)… 639,96&#10;Sandriole (salão)… 429,18&#10;Locação container (imobilizado)… 280,00" style="resize:vertical;line-height:1.6;"></textarea>
+    </div>
+    <button class="btn btn-brand" onclick="interpretarSaidas()" style="margin-bottom:8px;">🔍 Interpretar</button>
+  </div>
+
+  <!-- PREVIEW DOS ITENS -->
+  <div id="imp-preview" style="display:none;">
+    <div class="card">
+      <div class="card-title">✅ Itens encontrados — confirme antes de lançar</div>
+
+      <!-- TOTAIS POR CATEGORIA -->
+      <div id="imp-totais" style="margin-bottom:14px;"></div>
+
+      <!-- LISTA DE ITENS -->
+      <div id="imp-lista"></div>
+
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-outline" onclick="limparImport()" style="flex:1;">✕ Cancelar</button>
+        <button class="btn btn-brand" onclick="confirmarImport()" style="flex:2;">✓ Lançar todos</button>
+      </div>
+    </div>
+
+    <!-- ITENS NÃO RECONHECIDOS -->
+    <div id="imp-nao-reconhecidos" style="display:none;">
+      <div class="card-red">
+        <div class="card-title" style="color:var(--red);">⚠️ Itens não reconhecidos</div>
+        <div id="imp-nr-lista"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
   <div class="nav-group">
     <button class="nav-btn active" onclick="nav('dashboard',this)" id="nav-dashboard"><span class="ni">🏠</span><span>Início</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('diario',this)" id="nav-diario"><span class="ni">📅</span><span>Diário</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('semanal',this)" id="nav-semanal"><span class="ni">📊</span><span>Semanal</span><div class="nav-dot"></div></button>
+    <button class="nav-btn" onclick="nav('cmv',this)" id="nav-cmv"><span class="ni">📦</span><span>CMV</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('saidas',this)" id="nav-saidas"><span class="ni">💸</span><span>Saídas</span><div class="nav-dot"></div></button>
+    <button class="nav-btn" onclick="nav('import',this)" id="nav-import"><span class="ni">📋</span><span>Importar</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('prov',this)" id="nav-prov"><span class="ni">🏦</span><span>Provisionada</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('dre',this)" id="nav-dre"><span class="ni">📈</span><span>DRE</span><div class="nav-dot"></div></button>
   </div>
@@ -617,7 +849,7 @@ const SB_KEY='sb_publishable_G9srgYau-C0Z4fPu4Q3Neg_9RmLWPWc';
 
 // Estado local (cache)
 let S={
-  dias:[], semanais:[], saidasCC:[], prov:[],
+  dias:[], semanais:[], saidasCC:[], prov:[], cmvs:[],
   saldoCC:CC_INI, saldoProv:PROV_INI,
   mesFiltro:'2025-04'
 };
@@ -654,19 +886,21 @@ async function salvar() {
 async function carregarDados() {
   mostrarLoading(true);
   try {
-    const [dias, semanais, saidas, prov] = await Promise.all([
-      sbGet('dias'), sbGet('semanais'), sbGet('saidas_cc'), sbGet('provisionada')
+    const [dias, semanais, saidas, prov, cmvs] = await Promise.all([
+      sbGet('dias'), sbGet('semanais'), sbGet('saidas_cc'), sbGet('provisionada'), sbGet('cmv')
     ]);
     // Mapear de volta para formato interno
     S.dias = dias.map(d => ({
       id:d.id, data:d.data, mes:d.mes, fat:d.fat,
       custos:{taxa:d.custo_taxa,taxaCoz:d.custo_taxa_coz,taxaBol:d.custo_taxa_bol,taxaEstac:d.custo_taxa_estac,taxaBar:d.custo_taxa_bar,outros:d.custo_outros},
       totalCustos:d.total_custos, sobrou:d.sobrou,
-      retProv:d.ret_prov, retTaxa:d.ret_taxa, retBol:d.ret_bol, totalRet:d.total_ret
+      retProv:d.ret_prov, retTaxa:d.ret_taxa, retBol:d.ret_bol, totalRet:d.total_ret,
+      adultos:d.adultos||0, criancas:d.criancas||0, ticket:d.ticket||0
     }));
     S.semanais = semanais.map(l => ({id:l.id,data:l.data,mes:l.mes,periodo:l.periodo,cat:l.cat,valor:l.valor}));
     S.saidasCC = saidas.map(l => ({id:l.id,data:l.data,mes:l.mes,cat:l.cat,valor:l.valor,desc:l.descricao}));
     S.prov = prov.map(l => ({id:l.id,data:l.data,mes:l.mes,cat:l.cat,valor:l.valor,desc:l.descricao,tipo:l.tipo}));
+    S.cmvs = (cmvs||[]).map(l => ({id:l.id,semana:l.semana,mes:l.mes,centro:l.centro,ei:l.ei,compras:l.compras,desp:l.desperdicio,ef:l.ef,fat:l.faturamento,cmv:l.cmv_valor,pct:l.cmv_pct}));
     // Recalcular saldos
     recalcularSaldos();
     localStorage.setItem('gbb_v4', JSON.stringify(S));
@@ -674,6 +908,7 @@ async function carregarDados() {
     console.error('Erro ao carregar:', e);
     // fallback localStorage
     const local = JSON.parse(localStorage.getItem('gbb_v4')||'null');
+    if(local&&local.cmvs) S.cmvs=local.cmvs;
     if(local) S = {...S,...local};
     toast('⚠️ Usando dados locais (sem internet)','error');
   }
@@ -702,7 +937,7 @@ function mostrarLoading(show) {
 }
 
 // NAVEGAÇÃO
-const PAGES=['dashboard','diario','semanal','saidas','prov','dre'];
+const PAGES=['dashboard','diario','semanal','cmv','saidas','import','prov','dre'];
 function nav(id,btn){
   PAGES.forEach(p=>{document.getElementById('p-'+p).style.display='none';document.getElementById('nav-'+p).classList.remove('active');});
   document.getElementById('p-'+id).style.display='';
@@ -713,6 +948,8 @@ function nav(id,btn){
   if(id==='diario')renderDias();
   if(id==='semanal')renderSemanais();
   if(id==='saidas')renderSaidasCC();
+  if(id==='cmv')renderCMVs();
+  if(id==='import'){const t=today();const el=document.getElementById('imp-data');if(el&&!el.value)el.value=t;}
   if(id==='prov')renderProv();
   atualizarSaldos();
 }
@@ -750,6 +987,26 @@ function toggleOpcional(){
 }
 
 // CALC SOBROU
+function calcTicket(){
+  const fat=parseFloat((document.getElementById('d-fat-val')||{}).value)||0;
+  const adultos=parseFloat((document.getElementById('d-adultos')||{}).value)||0;
+  const el=document.getElementById('d-ticket');
+  if(!el) return;
+  if(adultos>0 && fat>0){
+    const ticket=fat/adultos;
+    el.textContent=fmt(ticket);
+    if(el.dataset.orig) el.dataset.orig=fmt(ticket);
+    // cor por performance
+    const box=document.getElementById('ticket-box');
+    if(box){
+      if(ticket>=85){box.style.background='var(--green-light)';box.style.borderColor='var(--green)';}
+      else if(ticket>=75){box.style.background='var(--brand-light)';box.style.borderColor='var(--brand)';}
+      else{box.style.background='var(--red-light)';box.style.borderColor='var(--red)';}
+    }
+  } else {
+    el.textContent='—';
+  }
+}
 function calcSobrou(){
   const fat=pv('d-fat-val');
   const custos=pv('d-taxa')+pv('d-taxa-coz')+pv('d-taxa-bol')+pv('d-taxa-estac')+pv('d-taxa-bar')+pv('d-outros');
@@ -773,7 +1030,10 @@ function lancarDia(){
   const sobrou=fat-totalCustos;
   const retProv=3000, retTaxa=pv('d-ret-taxa'), retBol=pv('d-ret-bol');
   const totalRet=retProv+retTaxa+retBol;
-  const dia={id:Date.now(),data,mes,fat,custos,totalCustos,sobrou,retProv,retTaxa,retBol,totalRet};
+  const adultos=parseFloat((document.getElementById('d-adultos')||{}).value)||0;
+  const criancas=parseFloat((document.getElementById('d-criancas')||{}).value)||0;
+  const ticket=adultos>0?parseFloat((fat/adultos).toFixed(2)):0;
+  const dia={id:Date.now(),data,mes,fat,custos,totalCustos,sobrou,retProv,retTaxa,retBol,totalRet,adultos,criancas,ticket};
   S.dias.push(dia);
   S.saldoCC+=(fat-totalCustos-retProv-retTaxa-retBol);
   S.saldoProv-=retProv;
@@ -784,10 +1044,11 @@ function lancarDia(){
     custo_taxa:custos.taxa, custo_taxa_coz:custos.taxaCoz, custo_taxa_bol:custos.taxaBol,
     custo_taxa_estac:custos.taxaEstac, custo_taxa_bar:custos.taxaBar, custo_outros:custos.outros,
     total_custos:totalCustos, sobrou:sobrou,
-    ret_prov:retProv, ret_taxa:retTaxa, ret_bol:retBol, total_ret:totalRet
+    ret_prov:retProv, ret_taxa:retTaxa, ret_bol:retBol, total_ret:totalRet,
+    adultos:dia.adultos, criancas:dia.criancas, ticket:dia.ticket
   }).catch(e=>toast('⚠️ Erro ao salvar na nuvem','error'));
   // Limpar
-  ['d-fat-val','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-ret-taxa','d-ret-bol'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['d-fat-val','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-ret-taxa','d-ret-bol','d-adultos','d-criancas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const tickEl=document.getElementById('d-ticket');if(tickEl)tickEl.textContent='—';;
   calcSobrou();
   renderDias();atualizarSaldos();
   toast('✓ Dia '+data+' lançado!');
@@ -913,6 +1174,15 @@ function atualizarSaldos(){
 // DASHBOARD
 function renderDashboard(){
   const fatDia=S.dias.reduce((s,d)=>s+d.fat,0);
+  // Público e ticket
+  const totalAdultos=S.dias.reduce((s,d)=>s+(d.adultos||0),0);
+  const totalCriancas=S.dias.reduce((s,d)=>s+(d.criancas||0),0);
+  const ticketMedio=totalAdultos>0?(fatDia/totalAdultos):0;
+  // Atualizar KPIs público no dashboard se existir
+  const elAd=document.getElementById('d-adultos-kpi');if(elAd) elAd.textContent=totalAdultos;
+  const elCr=document.getElementById('d-criancas-kpi');if(elCr) elCr.textContent=totalCriancas;
+  const elTk=document.getElementById('d-ticket-kpi');
+  if(elTk){elTk.textContent=totalAdultos>0?fmt(ticketMedio):'—';elTk.style.color=ticketMedio>=85?'var(--green)':ticketMedio>=75?'var(--brand)':'var(--red)';}
   const fatSem=S.semanais.reduce((s,l)=>s+l.valor,0);
   const totalFat=fatDia+fatSem;
   const custosDia=S.dias.reduce((s,d)=>s+d.totalCustos,0);
@@ -952,6 +1222,15 @@ function renderDRE(){
   const custosTotal=tSal+tCoz+tBol+tEstac+tBar+extras;
   sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal,'var(--red)');
   sv('dre-saldo-cc',S.saldoCC);
+  // Público e ticket
+  const adultosMes=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
+  const criancasMes=diasFiltro.reduce((s,d)=>s+(d.criancas||0),0);
+  const ticketMes=adultosMes>0?(recTotal/adultosMes):0;
+  const elAdDRE=document.getElementById('dre-adultos');if(elAdDRE) elAdDRE.textContent=adultosMes;
+  const elCrDRE=document.getElementById('dre-criancas');if(elCrDRE) elCrDRE.textContent=criancasMes;
+  const elPubDRE=document.getElementById('dre-publico');if(elPubDRE) elPubDRE.textContent=adultosMes+criancasMes;
+  const elTkDRE=document.getElementById('dre-ticket');
+  if(elTkDRE){elTkDRE.textContent=adultosMes>0?fmt(ticketMes):'—';elTkDRE.style.color=ticketMes>=85?'var(--green)':ticketMes>=75?'var(--brand)':'var(--red)';}
   const ml=recTotal>0?(S.saldoCC/recTotal*100):0;
   const mlEl=document.getElementById('dre-ml');if(mlEl){mlEl.textContent=recTotal>0?ml.toFixed(2)+'%':'—';mlEl.style.color=ml>=15?'var(--green)':ml>=8?'var(--brand)':'var(--red)';}
   // Pró-labore: preenchido manualmente no fechamento mensal
@@ -959,6 +1238,7 @@ function renderDRE(){
   // Transferências diárias (R$3k/dia) entram automaticamente na provisionada
   const transf=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+(d.retProv||0),0);
   const provEntManual=somaT(S.prov,'entrada');
+  renderDRECMV(mesFiltro);
   const provEnt=provEntManual+transf,provFol=somaT(S.prov,'saida',['Folha de Pagamento','Vale Transporte','13º Salário','Férias','FGTS','INSS']);
   const provAlug=somaT(S.prov,'saida',['Aluguel']),provEn=somaT(S.prov,'saida',['Energia Elétrica','Água','Gás']);
   const provServ=somaT(S.prov,'saida',['Contador','Sistema','Internet']),provJur=somaT(S.prov,'saida',['Honorários Dra. Vanusa','Processo Trabalhista']);
@@ -967,6 +1247,340 @@ function renderDRE(){
   // Mostrar detalhamento das entradas
   const elProvEntDetalhe=document.getElementById('dre-prov-ent-detalhe');
   if(elProvEntDetalhe) elProvEntDetalhe.textContent='(R$3k/dia: '+fmt(transf)+' + manual: '+fmt(provEntManual)+')';sv('dre-prov-folha',provFol,'var(--red)');sv('dre-prov-aluguel',provAlug,'var(--red)');sv('dre-prov-energia',provEn,'var(--red)');sv('dre-prov-servicos',provServ,'var(--red)');sv('dre-prov-juridico',provJur,'var(--red)');sv('dre-prov-outros',provOut,'var(--red)');sv('dre-prov-saldo',S.saldoProv,'var(--brand)');
+}
+
+// ===== IMPORTAÇÃO DE SAÍDAS =====
+const CAT_MAP = {
+  'bar': 'Compras Bar',
+  'cozinha': 'Compras Cozinha',
+  'pizza': 'Compras Pizza',
+  'salão': 'Limpeza/Salão',
+  'salao': 'Limpeza/Salão',
+  'imobilizado': 'Custo Mobilizado',
+  'mobilizado': 'Custo Mobilizado',
+  'taxas diárias': 'Limpeza CMO',
+  'taxas diarias': 'Limpeza CMO',
+  'taxa': 'Taxa Cozinha',
+  'boliche': 'CMO Boliche',
+  'estacionamento': 'Estacionamento',
+};
+
+const CAT_COLORS_IMP = {
+  'Compras Bar': '#3B82F6',
+  'Compras Cozinha': '#10B981',
+  'Compras Pizza': '#94A3B8',
+  'Limpeza/Salão': '#F59E0B',
+  'Custo Mobilizado': '#8B5CF6',
+  'Limpeza CMO': '#EF9F27',
+  'CMO Boliche': '#8B5CF6',
+  'Estacionamento': '#F59E0B',
+  'Outros': '#94A3B8',
+};
+
+let itensImport = [];
+
+function interpretarSaidas() {
+  const texto = (document.getElementById('imp-texto').value || '').trim();
+  if(!texto) { toast('⚠️ Cole a mensagem primeiro', 'error'); return; }
+
+  const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const reconhecidos = [];
+  const naoReconhecidos = [];
+
+  linhas.forEach(linha => {
+    // Regex: Fornecedor (categoria)… valor  ou  Fornecedor (categoria)... valor
+    const match = linha.match(/^(.+?)\s*\(([^)]+)\)\s*[…\.]+\s*([\d.,]+)\s*$/i);
+    if(match) {
+      const fornecedor = match[1].trim();
+      const catRaw = match[2].trim().toLowerCase();
+      const valorStr = match[3].replace('.', '').replace(',', '.');
+      const valor = parseFloat(valorStr) || 0;
+      if(valor <= 0) { naoReconhecidos.push({linha, motivo:'Valor inválido'}); return; }
+      // Buscar categoria
+      let cat = null;
+      for(const [key, val] of Object.entries(CAT_MAP)) {
+        if(catRaw.includes(key)) { cat = val; break; }
+      }
+      if(cat) {
+        reconhecidos.push({ id: Date.now()+Math.random(), fornecedor, catRaw, cat, valor });
+      } else {
+        naoReconhecidos.push({ linha, motivo: 'Categoria "('+catRaw+')" não reconhecida' });
+      }
+    } else {
+      if(linha.length > 2) naoReconhecidos.push({ linha, motivo: 'Formato não reconhecido' });
+    }
+  });
+
+  itensImport = reconhecidos;
+
+  if(!reconhecidos.length && !naoReconhecidos.length) {
+    toast('⚠️ Nenhum item encontrado', 'error'); return;
+  }
+
+  // Mostrar preview
+  document.getElementById('imp-preview').style.display = '';
+
+  // Totais por categoria
+  const totCat = {};
+  reconhecidos.forEach(i => { totCat[i.cat] = (totCat[i.cat]||0) + i.valor; });
+  const totalGeral = reconhecidos.reduce((s,i)=>s+i.valor,0);
+
+  const totEl = document.getElementById('imp-totais');
+  totEl.innerHTML = '<div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;">Totais por categoria</div>' +
+    Object.entries(totCat).sort((a,b)=>b[1]-a[1]).map(([cat,val]) =>
+      `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+        <span style="display:flex;align-items:center;gap:6px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${CAT_COLORS_IMP[cat]||'#94A3B8'};display:inline-block;"></span>
+          <strong>${cat}</strong>
+        </span>
+        <span style="font-weight:700;color:var(--red);">${fmt(val)}</span>
+      </div>`
+    ).join('') +
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px;">
+      <strong>TOTAL</strong><strong style="color:var(--red);">${fmt(totalGeral)}</strong>
+    </div>`;
+
+  // Lista de itens
+  const listaEl = document.getElementById('imp-lista');
+  listaEl.innerHTML = '<div style="margin:10px 0 6px;font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:0.06em;text-transform:uppercase;">Itens ('+reconhecidos.length+')</div>' +
+    reconhecidos.map((item, idx) =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg);">
+        <span style="width:8px;height:8px;border-radius:50%;background:${CAT_COLORS_IMP[item.cat]||'#94A3B8'};flex-shrink:0;"></span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.fornecedor}</div>
+          <div style="font-size:10px;color:var(--text-3);">${item.cat}</div>
+        </div>
+        <select onchange="itensImport[${idx}].cat=this.value" style="font-size:10px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);max-width:110px;font-family:'Nunito',sans-serif;">
+          ${['Compras Bar','Compras Cozinha','Compras Pizza','Limpeza/Salão','Custo Mobilizado','Limpeza CMO','CMO Boliche','Estacionamento','Outros CC'].map(o=>`<option value="${o}" ${o===item.cat?'selected':''}>${o}</option>`).join('')}
+        </select>
+        <span style="font-size:12px;font-weight:700;color:var(--red);white-space:nowrap;">${fmt(item.valor)}</span>
+      </div>`
+    ).join('');
+
+  // Não reconhecidos
+  const nrEl = document.getElementById('imp-nao-reconhecidos');
+  const nrLista = document.getElementById('imp-nr-lista');
+  if(naoReconhecidos.length) {
+    nrEl.style.display = '';
+    nrLista.innerHTML = naoReconhecidos.map(n =>
+      `<div style="padding:6px 0;border-bottom:1px solid rgba(239,68,68,0.2);font-size:11px;">
+        <div style="font-weight:700;color:var(--text);">${n.linha}</div>
+        <div style="color:var(--red);margin-top:2px;">${n.motivo}</div>
+      </div>`
+    ).join('');
+  } else {
+    nrEl.style.display = 'none';
+  }
+
+  toast('✓ '+reconhecidos.length+' itens encontrados!');
+}
+
+function confirmarImport() {
+  if(!itensImport.length) { toast('Nenhum item para lançar', 'error'); return; }
+  const data = gv('imp-data');
+  const mes = gv('imp-mes') || (data ? data.substring(0,7) : '2025-04');
+  if(!data) { toast('⚠️ Informe a data', 'error'); return; }
+
+  itensImport.forEach(item => {
+    const saida = { id: Math.floor(item.id), data, mes, cat: item.cat, valor: item.valor, desc: item.fornecedor };
+    S.saidasCC.push(saida);
+    S.saldoCC -= item.valor;
+    sbInsert('saidas_cc', { id: saida.id, data, mes, cat: item.cat, valor: item.valor, descricao: item.fornecedor })
+      .catch(e => console.error('Erro ao salvar '+item.fornecedor, e));
+  });
+
+  salvar();
+  atualizarSaldos();
+  toast('✓ '+itensImport.length+' saídas lançadas!');
+  limparImport();
+  nav('saidas', document.getElementById('nav-saidas'));
+}
+
+function limparImport() {
+  itensImport = [];
+  document.getElementById('imp-preview').style.display = 'none';
+  document.getElementById('imp-texto').value = '';
+  document.getElementById('imp-nao-reconhecidos').style.display = 'none';
+}
+
+// ===== CMV =====
+function atualizarCMVPreview(){
+  const centro = gv('cmv-centro');
+  const ei=parseFloat((document.getElementById('cmv-ei')||{}).value)||0;
+  const comp=parseFloat((document.getElementById('cmv-compras')||{}).value)||0;
+  const desp=parseFloat((document.getElementById('cmv-desp')||{}).value)||0;
+  const ef=parseFloat((document.getElementById('cmv-ef')||{}).value)||0;
+  const fat=parseFloat((document.getElementById('cmv-fat')||{}).value)||0;
+  const cmv=ei+comp+desp-ef;
+  const pct=fat>0?(cmv/fat*100):0;
+  const meta=centro==='Bar'?38:35;
+  const ok=pct>0&&pct<=meta;
+  const alto=pct>meta;
+  const box=document.getElementById('cmv-preview-box');
+  if(!box) return {cmv,pct};
+  if(ei||comp||desp||ef){
+    box.style.display='';
+    box.style.borderColor=ok?'var(--green)':alto?'var(--red)':'var(--border)';
+    box.style.background=ok?'var(--green-light)':alto?'var(--red-light)':'var(--bg)';
+    const pEl=document.getElementById('cmv-pct-val');
+    if(pEl){pEl.textContent=pct.toFixed(1)+'%';pEl.style.color=ok?'var(--green)':alto?'var(--red)':'var(--text)';}
+    const rEl=document.getElementById('cmv-rs-val');
+    if(rEl) rEl.textContent=fmt(cmv);
+    const mEl=document.getElementById('cmv-meta-label');
+    if(mEl){mEl.textContent=ok?'✓ OK':alto?'⚠ Alto':'—';mEl.style.background=ok?'var(--green-light)':alto?'var(--red-light)':'var(--bg)';mEl.style.color=ok?'var(--green)':alto?'var(--red)':'var(--text-3)';}
+    const mtEl=document.getElementById('cmv-meta-txt');
+    if(mtEl) mtEl.textContent='Meta: <'+meta+'%';
+    const barra=document.getElementById('cmv-barra');
+    if(barra){const w=Math.min(pct/60*100,100);barra.style.width=w+'%';barra.style.background=ok?'var(--green)':alto?'var(--red)':'var(--brand)';}
+    const mlEl=document.getElementById('cmv-meta-line');
+    if(mlEl) mlEl.textContent='Meta '+meta+'%';
+  } else {
+    box.style.display='none';
+  }
+  return {cmv,pct};
+}
+
+function salvarCMV(){
+  const semana=gv('cmv-semana'),centro=gv('cmv-centro'),mes=gv('cmv-mes');
+  if(!semana){toast('⚠️ Informe o período','error');return;}
+  const ei=parseFloat((document.getElementById('cmv-ei')||{}).value)||0;
+  const comp=parseFloat((document.getElementById('cmv-compras')||{}).value)||0;
+  const desp=parseFloat((document.getElementById('cmv-desp')||{}).value)||0;
+  const ef=parseFloat((document.getElementById('cmv-ef')||{}).value)||0;
+  const fat=parseFloat((document.getElementById('cmv-fat')||{}).value)||0;
+  const {cmv,pct}=atualizarCMVPreview();
+  const obj={id:Date.now(),semana,centro,mes,ei,compras:comp,desp,ef,fat,cmv,pct:parseFloat(pct.toFixed(2))};
+  S.cmvs.push(obj);
+  salvar();
+  // Salvar no Supabase
+  sbInsert('cmv',{id:obj.id,semana,centro,mes,ei,compras:comp,desperdicio:desp,ef,faturamento:fat,cmv_valor:cmv,cmv_pct:obj.pct})
+    .catch(e=>console.error('Erro CMV:',e));
+  // Limpar
+  ['cmv-semana','cmv-ei','cmv-compras','cmv-desp','cmv-ef','cmv-fat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('cmv-preview-box').style.display='none';
+  renderCMVs();
+  toast('✓ CMV salvo!');
+}
+
+function delCMV(id){
+  if(!confirm('Remover?'))return;
+  S.cmvs=S.cmvs.filter(x=>x.id!==id);
+  sbDelete('cmv',id).catch(e=>console.error(e));
+  salvar();renderCMVs();toast('✓ Removido');
+}
+
+function renderCMVs(){
+  const el=document.getElementById('lista-cmv');
+  if(!el) return;
+  if(!S.cmvs.length){el.innerHTML='<p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Nenhum CMV lançado ainda</p>';return;}
+  el.innerHTML=[...S.cmvs].reverse().map(c=>{
+    const meta=c.centro==='Bar'?38:35;
+    const ok=c.pct<=meta&&c.pct>0;
+    const cor=ok?'var(--green)':'var(--red)';
+    const bg=ok?'var(--green-light)':'var(--red-light)';
+    return `<div class="lancamento-item">
+      <div class="lanc-dot" style="background:${c.centro==='Bar'?'#3B82F6':'#10B981'};"></div>
+      <div class="lanc-info">
+        <div class="lanc-desc">${c.centro} · ${c.semana}</div>
+        <div class="lanc-meta">CMV ${fmt(c.cmv)} · Desp. ${fmt(c.desp||0)} · Fat. ${fmt(c.fat||0)}</div>
+      </div>
+      <div style="text-align:right;margin-right:4px;">
+        <div style="font-size:16px;font-weight:800;color:${cor};">${c.pct}%</div>
+        <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${bg};color:${cor};font-weight:700;">${ok?'✓ OK':'⚠ Alto'}</span>
+      </div>
+      <button class="lanc-del" onclick="delCMV(${c.id})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+// Render CMV na DRE
+function renderDRECMV(mesFiltro){
+  const el=document.getElementById('dre-cmv-lista');
+  if(!el) return;
+  const itens=S.cmvs.filter(c=>c.mes===mesFiltro);
+  if(!itens.length){el.innerHTML='<p style="font-size:12px;color:var(--text-3);text-align:center;padding:8px 0;">Nenhum CMV lançado</p>';return;}
+  // Agrupar por centro
+  const grupos={};
+  itens.forEach(c=>{if(!grupos[c.centro])grupos[c.centro]=[];grupos[c.centro].push(c);});
+  el.innerHTML=Object.entries(grupos).map(([centro,lista])=>{
+    const meta=centro==='Bar'?38:35;
+    const mediaP=(lista.reduce((s,c)=>s+c.pct,0)/lista.length).toFixed(1);
+    const ok=parseFloat(mediaP)<=meta;
+    return `<div style="margin-bottom:10px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text-2);margin-bottom:4px;">${centro==='Bar'?'🍺':'🍳'} ${centro} — média: <span style="color:${ok?'var(--green)':'var(--red)'};">${mediaP}%</span> <span style="font-size:10px;color:var(--text-3);">(meta &lt;${meta}%)</span></div>
+      ${lista.map(c=>{const okC=c.pct<=meta;return `<div class="dre-row"><span class="dre-label">${c.semana}</span><span style="font-weight:700;color:${okC?'var(--green)':'var(--red)'};">${c.pct}% <span class="badge ${okC?'badge-green':'badge-red'}">${okC?'✓':'⚠'}</span></span></div>`;}).join('')}
+    </div>`;
+  }).join('');
+}
+
+function copiarSaidasWhatsapp(){
+  const de = gv('copy-de');
+  const ate = gv('copy-ate');
+  if(!de || !ate){ toast('⚠️ Informe o período','error'); return; }
+
+  // Filtrar saídas pelo período
+  const itens = S.saidasCC.filter(l => l.data >= de && l.data <= ate);
+
+  if(!itens.length){ toast('⚠️ Nenhuma saída neste período','error'); return; }
+
+  // Nome amigável da categoria
+  function nomeCat(cat){
+    const map = {
+      'Compras Bar':'Bar','Compras Cozinha':'Cozinha','Compras Pizza':'Pizza',
+      'Limpeza/Salão':'Salão','Custo Mobilizado':'Imobilizado',
+      'Limpeza CMO':'Taxas Diárias','CMO Boliche':'Boliche',
+      'Estacionamento':'Estacionamento','Outros CC':'Outros',
+      'Custo Bar':'Bar','Custo Cozinha':'Cozinha'
+    };
+    return map[cat] || cat;
+  }
+
+  // Agrupar por categoria para os totais
+  const totCat = {};
+  itens.forEach(l => {
+    const cat = nomeCat(l.cat);
+    totCat[cat] = (totCat[cat]||0) + l.valor;
+  });
+
+  const totalGeral = itens.reduce((s,l)=>s+l.valor,0);
+
+  // Formatar data DD/MM
+  function fmtDt(d){ if(!d) return ''; const p=d.split('-'); return p[2]+'/'+p[1]; }
+
+  // Montar mensagem
+  let msg = '🧾 *SAÍDAS — ' + fmtDt(de) + ' a ' + fmtDt(ate) + '*\n';
+  msg += '━━━━━━━━━━━━━━━━━━\n';
+
+  // Listar cada item
+  itens.sort((a,b) => a.data.localeCompare(b.data)).forEach(l => {
+    const val = l.valor.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    msg += (l.desc || l.cat) + ' (' + nomeCat(l.cat) + ')… ' + val + '\n';
+  });
+
+  msg += '━━━━━━━━━━━━━━━━━━\n';
+  msg += '*TOTAIS POR CATEGORIA*\n';
+
+  // Ordenar categorias por valor
+  Object.entries(totCat).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
+    msg += cat + ': R$ ' + val.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '\n';
+  });
+
+  msg += '━━━━━━━━━━━━━━━━━━\n';
+  msg += '*TOTAL GERAL: R$ ' + totalGeral.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '*';
+
+  // Mostrar preview
+  const prev = document.getElementById('copy-preview');
+  if(prev){ prev.style.display=''; prev.textContent=msg; }
+
+  // Copiar
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(msg).then(()=>toast('✓ Copiado! Cola no WhatsApp 📲'));
+  } else {
+    const el=document.createElement('textarea');el.value=msg;
+    document.body.appendChild(el);el.select();
+    document.execCommand('copy');document.body.removeChild(el);
+    toast('✓ Copiado! Cola no WhatsApp 📲');
+  }
 }
 
 function calcProlabore(){
