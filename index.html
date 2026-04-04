@@ -454,6 +454,26 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <button class="btn btn-brand" onclick="lancarSemanal()">+ Importar semana</button>
   </div>
 
+  <div class="card" style="border:1.5px solid var(--purple);">
+    <div class="card-title" style="color:var(--purple);">👷 CMO Semanal — Funcionários MEI</div>
+    <p style="font-size:11px;color:var(--text-3);margin-bottom:12px;font-weight:500;">Estacionamento, Caixa e Limpeza — pagos semanalmente. Entram no CMO da DRE.</p>
+    <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div class="custo-row">
+        <span class="custo-label">🅿️ Estacionamento</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmo-estac" placeholder="0" step="0.01"></div>
+      </div>
+      <div class="custo-row">
+        <span class="custo-label">💳 Caixa</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmo-caixa" placeholder="0" step="0.01"></div>
+      </div>
+      <div class="custo-row">
+        <span class="custo-label">🧹 Limpeza</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="cmo-limpeza" placeholder="0" step="0.01"></div>
+      </div>
+    </div>
+    <button class="btn btn-outline" style="border-color:var(--purple);color:var(--purple);font-family:'Nunito',sans-serif;" onclick="lancarCMOSemanal()">+ Lançar CMO semanal</button>
+  </div>
+
   <div class="card">
     <div class="card-title">📋 Semanas lançadas</div>
     <div id="lista-semanais"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Nenhuma semana lançada ainda</p></div>
@@ -695,6 +715,9 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="dre-row"><span class="dre-label">Custo taxa estacionamento</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-estac">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Custo taxa bar + outros</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Compras / saídas extras</span><span class="dre-value" style="color:var(--red);" id="dre-extras">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">CMO Estacionamento (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-estac-sem">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">CMO Caixa (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-caixa-sem">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">CMO Limpeza (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-limp-sem">R$ 0,00</span></div>
     <div class="dre-row total"><span class="dre-label">Total custos</span><span class="dre-value" style="color:var(--red);" id="dre-custos-total">R$ 0,00</span></div>
 
     <div class="dre-section-title">Público e Ticket Médio</div>
@@ -1218,9 +1241,15 @@ function renderDRE(){
   const tBol=diasFiltro.reduce((s,d)=>s+d.custos.taxaBol,0);
   const tEstac=diasFiltro.reduce((s,d)=>s+d.custos.taxaEstac,0);
   const tBar=diasFiltro.reduce((s,d)=>s+d.custos.taxaBar+d.custos.outros,0);
-  const extras=S.saidasCC.reduce((s,l)=>s+l.valor,0);
+  const cmoEstacSem=S.saidasCC.filter(l=>l.cat==='CMO Estacionamento'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const cmoCaixaSem=S.saidasCC.filter(l=>l.cat==='CMO Caixa'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const cmoLimpSem=S.saidasCC.filter(l=>l.cat==='CMO Limpeza'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  sv('dre-cmo-estac-sem',cmoEstacSem,'var(--red)');
+  sv('dre-cmo-caixa-sem',cmoCaixaSem,'var(--red)');
+  sv('dre-cmo-limp-sem',cmoLimpSem,'var(--red)');
+  const extras=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza'].includes(l.cat)).reduce((s,l)=>s+l.valor,0);
   const custosTotal=tSal+tCoz+tBol+tEstac+tBar+extras;
-  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal,'var(--red)');
+  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal+cmoEstacSem+cmoCaixaSem+cmoLimpSem,'var(--red)');
   sv('dre-saldo-cc',S.saldoCC);
   // Público e ticket
   const adultosMes=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
@@ -1511,6 +1540,34 @@ function renderDRECMV(mesFiltro){
       ${lista.map(c=>{const okC=c.pct<=meta;return `<div class="dre-row"><span class="dre-label">${c.semana}</span><span style="font-weight:700;color:${okC?'var(--green)':'var(--red)'};">${c.pct}% <span class="badge ${okC?'badge-green':'badge-red'}">${okC?'✓':'⚠'}</span></span></div>`;}).join('')}
     </div>`;
   }).join('');
+}
+
+function lancarCMOSemanal(){
+  const periodo=gv('s-periodo')||'Semana';
+  const dataIni=gv('s-data-ini')||today();
+  const mes=(document.getElementById('s-mes')||{value:dataIni.substring(0,7)}).value||dataIni.substring(0,7);
+  const estac=parseFloat((document.getElementById('cmo-estac')||{}).value)||0;
+  const caixa=parseFloat((document.getElementById('cmo-caixa')||{}).value)||0;
+  const limpeza=parseFloat((document.getElementById('cmo-limpeza')||{}).value)||0;
+  if(!estac&&!caixa&&!limpeza){toast('⚠️ Preencha ao menos um valor','error');return;}
+  const itens=[
+    {cat:'CMO Estacionamento',valor:estac},
+    {cat:'CMO Caixa',valor:caixa},
+    {cat:'CMO Limpeza',valor:limpeza}
+  ].filter(i=>i.valor>0);
+  let total=0;
+  itens.forEach(item=>{
+    const obj={id:Date.now()+Math.random(),data:dataIni,mes,cat:item.cat,valor:item.valor,desc:periodo};
+    S.saidasCC.push(obj);
+    S.saldoCC-=item.valor;
+    total+=item.valor;
+    sbInsert('saidas_cc',{id:Math.floor(obj.id),data:dataIni,mes,cat:item.cat,valor:item.valor,descricao:periodo})
+      .catch(e=>console.error(e));
+  });
+  salvar();
+  ['cmo-estac','cmo-caixa','cmo-limpeza'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  atualizarSaldos();
+  toast('✓ CMO semanal lançado! '+fmt(total));
 }
 
 function copiarSaidasWhatsapp(){
