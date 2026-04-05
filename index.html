@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#EF9F27">
 <link rel="apple-touch-icon" sizes="180x180" href="/icon.png">
 <link rel="icon" type="image/png" href="/icon.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -448,6 +449,18 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
       <span class="semana-campo-title">Taxa 10%</span>
       <input type="number" id="s-taxa" placeholder="0,00" step="0.01" oninput="previewSemanal()">
     </div>
+
+    <div class="section-label" style="margin-top:14px;">Itens vendidos</div>
+    <div class="semana-campo">
+      <span class="rec-dot" style="background:#3B82F6;"></span>
+      <span class="semana-campo-title">Itens Bar</span>
+      <input type="number" id="s-itens-bar" placeholder="0" step="1">
+    </div>
+    <div class="semana-campo">
+      <span class="rec-dot" style="background:#10B981;"></span>
+      <span class="semana-campo-title">Itens Cozinha</span>
+      <input type="number" id="s-itens-coz" placeholder="0" step="1">
+    </div>
     <div id="s-preview" style="display:none;">
       <div class="resultado-box"><span class="resultado-label">Total da semana</span><span class="resultado-value money" id="s-total-preview">R$ 0,00</span></div>
     </div>
@@ -713,7 +726,8 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="dre-row"><span class="dre-label">Custo taxa cozinha</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-coz">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Custo taxa boliche</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bol">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Custo taxa estacionamento</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-estac">R$ 0,00</span></div>
-    <div class="dre-row"><span class="dre-label">Custo taxa bar + outros</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bar">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Custo taxa bar</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bar">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Outros custos diários</span><span class="dre-value" style="color:var(--red);" id="dre-outros">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Compras / saídas extras</span><span class="dre-value" style="color:var(--red);" id="dre-extras">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">CMO Estacionamento (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-estac-sem">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">CMO Caixa (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-caixa-sem">R$ 0,00</span></div>
@@ -786,68 +800,43 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <button class="btn btn-outline" onclick="copiarDRE()">📋 Copiar resumo DRE</button>
 </div>
 
-<!-- ========== IMPORTAR ========== -->
-<div id="p-import" style="display:none;" class="page-content">
-  <div class="page-title">Importar Saídas <span class="page-badge">cola do WhatsApp</span></div>
+<!-- ========== ANÁLISE ========== -->
+<div id="p-analise" style="display:none;" class="page-content">
+  <div class="page-title">Análise <span class="page-badge" id="analise-periodo">Abril 2025</span></div>
 
-  <div class="card-brand">
-    <div class="card-title" style="color:var(--brand);">📋 Cole a mensagem do grupo</div>
-    <p style="font-size:11px;color:var(--text-3);margin-bottom:10px;font-weight:500;">
-      Cole exatamente como você manda no WhatsApp.<br>
-      Formato: <strong>Fornecedor (categoria)… valor</strong>
-    </p>
-    <div class="form-row" style="margin-bottom:10px;">
-      <div class="form-group">
-        <label class="form-label">Data das saídas</label>
-        <input type="date" class="form-input" id="imp-data">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Mês de competência</label>
-        <select class="form-input" id="imp-mes">
-          <option value="2025-03">Março 2025</option>
-          <option value="2025-04" selected>Abril 2025</option>
-          <option value="2025-05">Maio 2025</option>
-          <option value="2025-06">Junho 2025</option>
-          <option value="2025-07">Julho 2025</option>
-          <option value="2025-08">Agosto 2025</option>
-          <option value="2025-09">Setembro 2025</option>
-          <option value="2025-10">Outubro 2025</option>
-          <option value="2025-11">Novembro 2025</option>
-          <option value="2025-12">Dezembro 2025</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Mensagem do WhatsApp</label>
-      <textarea class="form-input" id="imp-texto" rows="8" placeholder="Heineken (bar)… 437,43&#10;Mega Brasil (cozinha)… 639,96&#10;Sandriole (salão)… 429,18&#10;Locação container (imobilizado)… 280,00" style="resize:vertical;line-height:1.6;"></textarea>
-    </div>
-    <button class="btn btn-brand" onclick="interpretarSaidas()" style="margin-bottom:8px;">🔍 Interpretar</button>
+  <!-- KPIs RÁPIDOS -->
+  <div class="kpi-row" id="analise-kpis" style="grid-template-columns:1fr 1fr;">
+    <div class="kpi-card"><div class="kpi-label">FATURAMENTO</div><div class="kpi-value" style="color:var(--brand);" id="an-fat">R$ 0</div></div>
+    <div class="kpi-card"><div class="kpi-label">MARGEM LÍQUIDA</div><div class="kpi-value" id="an-margem">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">TICKET MÉDIO</div><div class="kpi-value" id="an-ticket">—</div></div>
+    <div class="kpi-card"><div class="kpi-label">PÚBLICO TOTAL</div><div class="kpi-value" id="an-publico">0</div></div>
   </div>
 
-  <!-- PREVIEW DOS ITENS -->
-  <div id="imp-preview" style="display:none;">
-    <div class="card">
-      <div class="card-title">✅ Itens encontrados — confirme antes de lançar</div>
+  <!-- INSIGHTS AUTOMÁTICOS -->
+  <div class="card">
+    <div class="card-title">💡 Insights automáticos</div>
+    <div id="an-insights"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Lance dados para ver os insights</p></div>
+  </div>
 
-      <!-- TOTAIS POR CATEGORIA -->
-      <div id="imp-totais" style="margin-bottom:14px;"></div>
+  <!-- GRÁFICO MARGENS -->
+  <div class="card">
+    <div class="card-title">📊 Evolução semanal</div>
+    <div style="position:relative;height:200px;"><canvas id="an-chart-margens"></canvas></div>
+  </div>
 
-      <!-- LISTA DE ITENS -->
-      <div id="imp-lista"></div>
-
-      <div style="display:flex;gap:8px;margin-top:12px;">
-        <button class="btn btn-outline" onclick="limparImport()" style="flex:1;">✕ Cancelar</button>
-        <button class="btn btn-brand" onclick="confirmarImport()" style="flex:2;">✓ Lançar todos</button>
-      </div>
+  <!-- GRÁFICO CMV -->
+  <div class="card">
+    <div class="card-title">📦 CMV por semana</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div><div style="font-size:11px;font-weight:700;color:#10B981;margin-bottom:6px;">🍳 Cozinha (meta 35%)</div><div style="position:relative;height:140px;"><canvas id="an-chart-cmv-coz"></canvas></div></div>
+      <div><div style="font-size:11px;font-weight:700;color:#3B82F6;margin-bottom:6px;">🍺 Bar (meta 38%)</div><div style="position:relative;height:140px;"><canvas id="an-chart-cmv-bar"></canvas></div></div>
     </div>
+  </div>
 
-    <!-- ITENS NÃO RECONHECIDOS -->
-    <div id="imp-nao-reconhecidos" style="display:none;">
-      <div class="card-red">
-        <div class="card-title" style="color:var(--red);">⚠️ Itens não reconhecidos</div>
-        <div id="imp-nr-lista"></div>
-      </div>
-    </div>
+  <!-- GRÁFICO DECOMPOSIÇÃO -->
+  <div class="card">
+    <div class="card-title">📊 Decomposição por semana</div>
+    <div style="position:relative;height:200px;"><canvas id="an-chart-decomp"></canvas></div>
   </div>
 </div>
 
@@ -859,7 +848,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <button class="nav-btn" onclick="nav('semanal',this)" id="nav-semanal"><span class="ni">📊</span><span>Semanal</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('cmv',this)" id="nav-cmv"><span class="ni">📦</span><span>CMV</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('saidas',this)" id="nav-saidas"><span class="ni">💸</span><span>Saídas</span><div class="nav-dot"></div></button>
-    <button class="nav-btn" onclick="nav('import',this)" id="nav-import"><span class="ni">📋</span><span>Importar</span><div class="nav-dot"></div></button>
+    <button class="nav-btn" onclick="nav('analise',this)" id="nav-analise"><span class="ni">📈</span><span>Análise</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('prov',this)" id="nav-prov"><span class="ni">🏦</span><span>Provisionada</span><div class="nav-dot"></div></button>
     <button class="nav-btn" onclick="nav('dre',this)" id="nav-dre"><span class="ni">📈</span><span>DRE</span><div class="nav-dot"></div></button>
   </div>
@@ -960,7 +949,7 @@ function mostrarLoading(show) {
 }
 
 // NAVEGAÇÃO
-const PAGES=['dashboard','diario','semanal','cmv','saidas','import','prov','dre'];
+const PAGES=['dashboard','diario','semanal','cmv','saidas','analise','prov','dre'];
 function nav(id,btn){
   PAGES.forEach(p=>{document.getElementById('p-'+p).style.display='none';document.getElementById('nav-'+p).classList.remove('active');});
   document.getElementById('p-'+id).style.display='';
@@ -972,6 +961,7 @@ function nav(id,btn){
   if(id==='semanal')renderSemanais();
   if(id==='saidas')renderSaidasCC();
   if(id==='cmv')renderCMVs();
+  if(id==='analise'){renderAnalise();}
   if(id==='import'){const t=today();const el=document.getElementById('imp-data');if(el&&!el.value)el.value=t;}
   if(id==='prov')renderProv();
   atualizarSaldos();
@@ -1085,18 +1075,20 @@ function previewSemanal(){
   else p.style.display='none';
 }
 function lancarSemanal(){
+  const itensBar=parseFloat((document.getElementById('s-itens-bar')||{}).value)||0;
+  const itensCoz=parseFloat((document.getElementById('s-itens-coz')||{}).value)||0;
   const periodo=gv('s-periodo'),dataIni=gv('s-data-ini');
   if(!periodo){toast('⚠️ Informe o período','error');return;}
   const centros=[{id:'s-bar',cat:'Bar'},{id:'s-cozinha',cat:'Cozinha'},{id:'s-pizza',cat:'Pizza'},{id:'s-boliche',cat:'Boliche'},{id:'s-taxa',cat:'Taxa 10%'}];
   let total=0,lançados=0;
-  centros.forEach(c=>{const v=pv(c.id);if(v>0){S.semanais.push({id:Date.now()+Math.random(),data:dataIni,cat:c.cat,valor:v,desc:periodo,periodo});S.saldoCC+=v;total+=v;lançados++;}});
+  centros.forEach(c=>{const v=pv(c.id);if(v>0){S.semanais.push({id:Date.now()+Math.random(),data:dataIni,mes:mes,cat:c.cat,valor:v,desc:periodo,periodo,itensBar:itensBar,itensCoz:itensCoz});S.saldoCC+=v;total+=v;lançados++;}});
   if(!lançados){toast('⚠️ Preencha ao menos um centro','error');return;}
   // Salvar cada centro no Supabase
   S.semanais.slice(-lançados).forEach(l => {
     sbInsert('semanais',{id:l.id,data:l.data,mes:l.mes||l.data.substring(0,7),periodo:l.periodo,cat:l.cat,valor:l.valor})
     .catch(e=>console.error('Erro semana:',e));
   });
-  salvar();centros.forEach(c=>{document.getElementById(c.id).value='';});document.getElementById('s-periodo').value='';document.getElementById('s-preview').style.display='none';
+  salvar();['s-itens-bar','s-itens-coz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});centros.forEach(c=>{document.getElementById(c.id).value='';});document.getElementById('s-periodo').value='';document.getElementById('s-preview').style.display='none';
   renderSemanais();atualizarSaldos();toast('✓ Semana importada! '+fmt(total));
 }
 
@@ -1240,16 +1232,18 @@ function renderDRE(){
   const tCoz=diasFiltro.reduce((s,d)=>s+d.custos.taxaCoz,0);
   const tBol=diasFiltro.reduce((s,d)=>s+d.custos.taxaBol,0);
   const tEstac=diasFiltro.reduce((s,d)=>s+d.custos.taxaEstac,0);
-  const tBar=diasFiltro.reduce((s,d)=>s+d.custos.taxaBar+d.custos.outros,0);
-  const cmoEstacSem=S.saidasCC.filter(l=>l.cat==='CMO Estacionamento'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
-  const cmoCaixaSem=S.saidasCC.filter(l=>l.cat==='CMO Caixa'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
-  const cmoLimpSem=S.saidasCC.filter(l=>l.cat==='CMO Limpeza'&&(l.mes||'')===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const tBar=diasFiltro.reduce((s,d)=>s+d.custos.taxaBar,0);
+  const tOutros=diasFiltro.reduce((s,d)=>s+d.custos.outros,0);
+  // CMO Semanal — filtra por mês ou por data se mês não estiver definido
+  const cmoEstacSem=S.saidasCC.filter(l=>l.cat==='CMO Estacionamento'&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  const cmoCaixaSem=S.saidasCC.filter(l=>l.cat==='CMO Caixa'&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  const cmoLimpSem=S.saidasCC.filter(l=>l.cat==='CMO Limpeza'&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
   sv('dre-cmo-estac-sem',cmoEstacSem,'var(--red)');
   sv('dre-cmo-caixa-sem',cmoCaixaSem,'var(--red)');
   sv('dre-cmo-limp-sem',cmoLimpSem,'var(--red)');
-  const extras=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza'].includes(l.cat)).reduce((s,l)=>s+l.valor,0);
-  const custosTotal=tSal+tCoz+tBol+tEstac+tBar+extras;
-  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal+cmoEstacSem+cmoCaixaSem+cmoLimpSem,'var(--red)');
+  const extras=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza'].includes(l.cat)&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  const custosTotal=tSal+tCoz+tBol+tEstac+tBar+tOutros+extras;
+  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-outros',tOutros,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal+cmoEstacSem+cmoCaixaSem+cmoLimpSem,'var(--red)');
   sv('dre-saldo-cc',S.saldoCC);
   // Público e ticket
   const adultosMes=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
@@ -1638,6 +1632,128 @@ function copiarSaidasWhatsapp(){
     document.execCommand('copy');document.body.removeChild(el);
     toast('✓ Copiado! Cola no WhatsApp 📲');
   }
+}
+
+// ===== ANÁLISE =====
+function renderAnalise(){
+  const mesFiltro = S.mesFiltro||'2025-04';
+
+  // Dados por semana (agrupa semanais por periodo)
+  const periodos = {};
+  S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mesFiltro).forEach(l=>{
+    const p=l.periodo||l.desc||'S?';
+    if(!periodos[p]) periodos[p]={fat:0,itensBar:0,itensCoz:0,label:p};
+    periodos[p].fat+=l.valor;
+    if(l.itensBar) periodos[p].itensBar+=l.itensBar;
+    if(l.itensCoz) periodos[p].itensCoz+=l.itensCoz;
+  });
+
+  // Dados dos dias
+  const diasFiltro=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro);
+  const fatDia=diasFiltro.reduce((s,d)=>s+d.fat,0);
+  const fatSem=S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const fatTotal=fatDia+fatSem;
+  const adultos=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
+  const criancas=diasFiltro.reduce((s,d)=>s+(d.criancas||0),0);
+  const ticket=adultos>0?(fatDia/adultos):0;
+  const margem=fatTotal>0?((S.saldoCC-14652.72)/fatTotal*100):0;
+
+  // KPIs
+  const anFat=document.getElementById('an-fat');if(anFat){anFat.textContent=fmt(fatTotal);if(anFat.dataset.orig)anFat.dataset.orig=fmt(fatTotal);}
+  const anM=document.getElementById('an-margem');if(anM){anM.textContent=fatTotal>0?margem.toFixed(1)+'%':'—';anM.style.color=margem>=15?'var(--green)':margem>=8?'var(--brand)':'var(--red)';}
+  const anT=document.getElementById('an-ticket');if(anT){anT.textContent=adultos>0?fmt(ticket):'—';anT.style.color=ticket>=85?'var(--green)':ticket>=75?'var(--brand)':'var(--red)';}
+  const anP=document.getElementById('an-publico');if(anP)anP.textContent=adultos+criancas;
+
+  // Insights automáticos
+  gerarInsights(fatTotal,margem,ticket,adultos);
+
+  // CMVs para gráficos
+  const cmvsCoz=S.cmvs.filter(c=>c.centro==='Cozinha'&&(c.mes||'')===mesFiltro);
+  const cmvsBar=S.cmvs.filter(c=>c.centro==='Bar'&&(c.mes||'')===mesFiltro);
+
+  // Gráficos
+  renderChartMargens(periodos);
+  renderChartCMV('an-chart-cmv-coz',cmvsCoz,'Cozinha',35,'#10B981');
+  renderChartCMV('an-chart-cmv-bar',cmvsBar,'Bar',38,'#3B82F6');
+  renderChartDecomp(periodos);
+}
+
+function gerarInsights(fat,margem,ticket,adultos){
+  const el=document.getElementById('an-insights');
+  if(!el) return;
+  if(!fat){el.innerHTML='<p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Lance dados para ver os insights</p>';return;}
+  const insights=[];
+  // Margem
+  if(margem>=20) insights.push({tipo:'green',titulo:'✅ Margem saudável — '+margem.toFixed(1)+'%',corpo:'O negócio está operando acima de 20% de margem líquida.'});
+  else if(margem>=10) insights.push({tipo:'amber',titulo:'🟡 Margem moderada — '+margem.toFixed(1)+'%',corpo:'Margem entre 10-20%. Monitore os custos para melhorar.'});
+  else insights.push({tipo:'red',titulo:'🔴 Margem baixa — '+margem.toFixed(1)+'%',corpo:'Margem abaixo de 10%. Revise custos e retiradas urgente.'});
+  // Ticket
+  if(ticket>0){
+    if(ticket>=85) insights.push({tipo:'green',titulo:'✅ Ticket médio ótimo — '+fmt(ticket)+'/adulto',corpo:'Acima da meta de R$85. Consumo por pessoa está excelente!'});
+    else if(ticket>=75) insights.push({tipo:'amber',titulo:'🟡 Ticket médio abaixo da meta — '+fmt(ticket)+'/adulto',corpo:'Meta é R$85. Incentive consumo de bebidas e sobremesas.'});
+    else insights.push({tipo:'red',titulo:'🔴 Ticket médio baixo — '+fmt(ticket)+'/adulto',corpo:'Abaixo de R$75. Verifique mix de produtos e promoções.'});
+  }
+  // CMV
+  const cmvsCoz=S.cmvs.filter(c=>c.centro==='Cozinha');
+  const cmvsBar=S.cmvs.filter(c=>c.centro==='Bar');
+  if(cmvsCoz.length){const avg=(cmvsCoz.reduce((s,c)=>s+c.pct,0)/cmvsCoz.length).toFixed(1);if(avg>35)insights.push({tipo:'red',titulo:'🔴 CMV Cozinha acima da meta — '+avg+'%',corpo:'Meta é 35%. Revise compras, desperdício e estoque.'});}
+  if(cmvsBar.length){const avg=(cmvsBar.reduce((s,c)=>s+c.pct,0)/cmvsBar.length).toFixed(1);if(avg>38)insights.push({tipo:'red',titulo:'🔴 CMV Bar acima da meta — '+avg+'%',corpo:'Meta é 38%. Controle desperdício e mix de bebidas.'});}
+
+  if(!insights.length) insights.push({tipo:'green',titulo:'✅ Tudo dentro do esperado!',corpo:'Continue monitorando semanalmente.'});
+
+  el.innerHTML=insights.map(i=>`
+    <div class="alert-box alert-${i.tipo}" style="margin-bottom:8px;">
+      <div class="alert-title">${i.titulo}</div>
+      <div class="alert-body">${i.corpo}</div>
+    </div>`).join('');
+}
+
+// Chart.js helpers
+const chartInstances={};
+function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();delete chartInstances[id];}}
+
+function renderChartMargens(periodos){
+  destroyChart('an-chart-margens');
+  const el=document.getElementById('an-chart-margens');
+  if(!el||!Object.keys(periodos).length) return;
+  const labels=Object.keys(periodos);
+  const fats=labels.map(p=>periodos[p].fat);
+  chartInstances['an-chart-margens']=new Chart(el,{
+    type:'line',
+    data:{labels,datasets:[{label:'Faturamento',data:fats,borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.1)',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:'#EF9F27'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+}
+
+function renderChartCMV(canvasId,cmvs,centro,meta,cor){
+  destroyChart(canvasId);
+  const el=document.getElementById(canvasId);
+  if(!el||!cmvs.length) return;
+  const labels=cmvs.map(c=>c.semana);
+  const pcts=cmvs.map(c=>c.pct);
+  chartInstances[canvasId]=new Chart(el,{
+    type:'line',
+    data:{labels,datasets:[
+      {label:'CMV%',data:pcts,borderColor:cor,backgroundColor:cor+'22',tension:0.3,fill:true,pointRadius:4,pointBackgroundColor:cor},
+      {label:'Meta',data:labels.map(()=>meta),borderColor:'#10B981',borderDash:[5,5],pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{min:20,max:60,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
+}
+
+function renderChartDecomp(periodos){
+  destroyChart('an-chart-decomp');
+  const el=document.getElementById('an-chart-decomp');
+  if(!el||!Object.keys(periodos).length) return;
+  const labels=Object.keys(periodos);
+  const fats=labels.map(p=>periodos[p].fat);
+  const maxFat=Math.max(...fats)||1;
+  // Simplificado: só faturamento por semana em barras
+  chartInstances['an-chart-decomp']=new Chart(el,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Faturamento',data:fats,backgroundColor:'#EF9F27',borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+  });
 }
 
 function calcProlabore(){
