@@ -728,7 +728,15 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="dre-row"><span class="dre-label">Custo taxa estacionamento</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-estac">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Custo taxa bar</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Outros custos diários</span><span class="dre-value" style="color:var(--red);" id="dre-outros">R$ 0,00</span></div>
-    <div class="dre-row"><span class="dre-label">Compras / saídas extras</span><span class="dre-value" style="color:var(--red);" id="dre-extras">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Compras Bar</span><span class="dre-value" style="color:var(--red);" id="dre-compras-bar">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Compras Cozinha</span><span class="dre-value" style="color:var(--red);" id="dre-compras-coz">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Compras Pizza</span><span class="dre-value" style="color:var(--red);" id="dre-compras-pizza">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Limpeza / Salão</span><span class="dre-value" style="color:var(--red);" id="dre-limpeza-salao">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Custo Mobilizado</span><span class="dre-value" style="color:var(--red);" id="dre-mobilizado">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Cortesias</span><span class="dre-value" style="color:var(--red);" id="dre-cortesias">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Desperdício Bar</span><span class="dre-value" style="color:var(--red);" id="dre-desp-bar">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Desperdício Cozinha</span><span class="dre-value" style="color:var(--red);" id="dre-desp-coz">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Outros</span><span class="dre-value" style="color:var(--red);" id="dre-extras-outros">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">CMO Estacionamento (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-estac-sem">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">CMO Caixa (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-caixa-sem">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">CMO Limpeza (semanal)</span><span class="dre-value" style="color:var(--red);" id="dre-cmo-limp-sem">R$ 0,00</span></div>
@@ -821,22 +829,22 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <!-- GRÁFICO MARGENS -->
   <div class="card">
     <div class="card-title">📊 Evolução semanal</div>
-    <div style="position:relative;height:200px;"><canvas id="an-chart-margens"></canvas></div>
+    <div style="position:relative;height:220px;"><canvas id="an-chart-margens"></canvas></div>
   </div>
 
   <!-- GRÁFICO CMV -->
   <div class="card">
     <div class="card-title">📦 CMV por semana</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div><div style="font-size:11px;font-weight:700;color:#10B981;margin-bottom:6px;">🍳 Cozinha (meta 35%)</div><div style="position:relative;height:140px;"><canvas id="an-chart-cmv-coz"></canvas></div></div>
-      <div><div style="font-size:11px;font-weight:700;color:#3B82F6;margin-bottom:6px;">🍺 Bar (meta 38%)</div><div style="position:relative;height:140px;"><canvas id="an-chart-cmv-bar"></canvas></div></div>
-    </div>
+    <div style="font-size:11px;font-weight:700;color:#10B981;margin-bottom:6px;">🍳 Cozinha — meta &lt;35%</div>
+    <div style="position:relative;height:160px;margin-bottom:16px;"><canvas id="an-chart-cmv-coz"></canvas></div>
+    <div style="font-size:11px;font-weight:700;color:#3B82F6;margin-bottom:6px;">🍺 Bar — meta &lt;38%</div>
+    <div style="position:relative;height:160px;"><canvas id="an-chart-cmv-bar"></canvas></div>
   </div>
 
   <!-- GRÁFICO DECOMPOSIÇÃO -->
   <div class="card">
     <div class="card-title">📊 Decomposição por semana</div>
-    <div style="position:relative;height:200px;"><canvas id="an-chart-decomp"></canvas></div>
+    <div style="position:relative;height:220px;"><canvas id="an-chart-decomp"></canvas></div>
   </div>
 </div>
 
@@ -907,11 +915,12 @@ async function carregarDados() {
       custos:{taxa:d.custo_taxa,taxaCoz:d.custo_taxa_coz,taxaBol:d.custo_taxa_bol,taxaEstac:d.custo_taxa_estac,taxaBar:d.custo_taxa_bar,outros:d.custo_outros},
       totalCustos:d.total_custos, sobrou:d.sobrou,
       retProv:d.ret_prov, retTaxa:d.ret_taxa, retBol:d.ret_bol, totalRet:d.total_ret,
-      adultos:d.adultos||0, criancas:d.criancas||0, ticket:d.ticket||0
+      adultos:d.adultos||0, criancas:d.criancas||0, ticket:d.ticket||0,
+      mes:d.mes||(d.data||'').substring(0,7)
     }));
-    S.semanais = semanais.map(l => ({id:l.id,data:l.data,mes:l.mes,periodo:l.periodo,cat:l.cat,valor:l.valor}));
-    S.saidasCC = saidas.map(l => ({id:l.id,data:l.data,mes:l.mes,cat:l.cat,valor:l.valor,desc:l.descricao}));
-    S.prov = prov.map(l => ({id:l.id,data:l.data,mes:l.mes,cat:l.cat,valor:l.valor,desc:l.descricao,tipo:l.tipo}));
+    S.semanais = semanais.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),periodo:l.periodo,cat:l.cat,valor:l.valor}));
+    S.saidasCC = saidas.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao}));
+    S.prov = prov.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao,tipo:l.tipo}));
     S.cmvs = (cmvs||[]).map(l => ({id:l.id,semana:l.semana,mes:l.mes,centro:l.centro,ei:l.ei,compras:l.compras,desp:l.desperdicio,ef:l.ef,fat:l.faturamento,cmv:l.cmv_valor,pct:l.cmv_pct}));
     // Recalcular saldos
     recalcularSaldos();
@@ -1219,6 +1228,9 @@ function renderDashboard(){
 // DRE
 function renderDRE(){
   const mesFiltro=S.mesFiltro||'2025-04';
+  // Sincronizar seletor
+  const selDRE=document.getElementById('dre-mes-sel');
+  if(selDRE&&selDRE.value!==mesFiltro){for(let o of selDRE.options){if(o.value===mesFiltro){o.selected=true;break;}}}
   const fatDia=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+d.fat,0);
   const bar=S.semanais.filter(l=>l.cat==='Bar'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
   const coz=S.semanais.filter(l=>l.cat==='Cozinha'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
@@ -1241,9 +1253,29 @@ function renderDRE(){
   sv('dre-cmo-estac-sem',cmoEstacSem,'var(--red)');
   sv('dre-cmo-caixa-sem',cmoCaixaSem,'var(--red)');
   sv('dre-cmo-limp-sem',cmoLimpSem,'var(--red)');
-  const extras=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza'].includes(l.cat)&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  // Calcular cada categoria de saída CC separadamente
+  const filtroCat=(cat)=>S.saidasCC.filter(l=>l.cat===cat&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  const comprasBar=filtroCat('Compras Bar');
+  const comprasCoz=filtroCat('Compras Cozinha');
+  const comprasPizza=filtroCat('Compras Pizza');
+  const limpezaSalao=filtroCat('Limpeza/Salão');
+  const mobilizado=filtroCat('Custo Mobilizado');
+  const cortesias=filtroCat('Cortesia');
+  const despBar=filtroCat('Desperdício Bar');
+  const despCoz=filtroCat('Desperdício Cozinha');
+  const extrasOutros=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza','Compras Bar','Compras Cozinha','Compras Pizza','Limpeza/Salão','Custo Mobilizado','Cortesia','Desperdício Bar','Desperdício Cozinha'].includes(l.cat)&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
+  const extras=comprasBar+comprasCoz+comprasPizza+limpezaSalao+mobilizado+cortesias+despBar+despCoz+extrasOutros;
   const custosTotal=tSal+tCoz+tBol+tEstac+tBar+tOutros+extras;
-  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-outros',tOutros,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal+cmoEstacSem+cmoCaixaSem+cmoLimpSem,'var(--red)');
+  sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-outros',tOutros,'var(--red)');
+  sv('dre-compras-bar',comprasBar,'var(--red)');
+  sv('dre-compras-coz',comprasCoz,'var(--red)');
+  sv('dre-compras-pizza',comprasPizza,'var(--red)');
+  sv('dre-limpeza-salao',limpezaSalao,'var(--red)');
+  sv('dre-mobilizado',mobilizado,'var(--red)');
+  sv('dre-cortesias',cortesias,'var(--red)');
+  sv('dre-desp-bar',despBar,'var(--red)');
+  sv('dre-desp-coz',despCoz,'var(--red)');
+  sv('dre-extras-outros',extrasOutros,'var(--red)');sv('dre-extras',extras,'var(--red)');sv('dre-custos-total',custosTotal+cmoEstacSem+cmoCaixaSem+cmoLimpSem,'var(--red)');
   sv('dre-saldo-cc',S.saldoCC);
   // Público e ticket
   const adultosMes=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
@@ -1636,6 +1668,11 @@ function copiarSaidasWhatsapp(){
 
 // ===== ANÁLISE =====
 function renderAnalise(){
+  // Destruir charts anteriores antes de recriar
+  ['an-chart-margens','an-chart-cmv-coz','an-chart-cmv-bar','an-chart-decomp'].forEach(id=>destroyChart(id));
+  setTimeout(()=>_renderAnaliseInner(),100);
+}
+function _renderAnaliseInner(){
   const mesFiltro = S.mesFiltro||'2025-04';
 
   // Dados por semana (agrupa semanais por periodo)
@@ -1676,7 +1713,7 @@ function renderAnalise(){
   renderChartCMV('an-chart-cmv-coz',cmvsCoz,'Cozinha',35,'#10B981');
   renderChartCMV('an-chart-cmv-bar',cmvsBar,'Bar',38,'#3B82F6');
   renderChartDecomp(periodos);
-}
+} // fim _renderAnaliseInner
 
 function gerarInsights(fat,margem,ticket,adultos){
   const el=document.getElementById('an-insights');
@@ -1715,29 +1752,41 @@ function destroyChart(id){if(chartInstances[id]){chartInstances[id].destroy();de
 function renderChartMargens(periodos){
   destroyChart('an-chart-margens');
   const el=document.getElementById('an-chart-margens');
-  if(!el||!Object.keys(periodos).length) return;
+  if(!el) return;
   const labels=Object.keys(periodos);
+  if(!labels.length){
+    const ctx=el.getContext('2d');
+    if(ctx){ctx.clearRect(0,0,el.width,el.height);ctx.fillStyle='#94A3B8';ctx.font='13px Nunito,sans-serif';ctx.textAlign='center';ctx.fillText('Lance semanas para ver o gráfico',el.offsetWidth/2||150,80);}
+    return;
+  }
   const fats=labels.map(p=>periodos[p].fat);
   chartInstances['an-chart-margens']=new Chart(el,{
-    type:'line',
-    data:{labels,datasets:[{label:'Faturamento',data:fats,borderColor:'#EF9F27',backgroundColor:'rgba(239,159,39,0.1)',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:'#EF9F27'}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:11}}},y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+    type:'bar',
+    data:{labels,datasets:[{label:'Faturamento',data:fats,backgroundColor:'rgba(239,159,39,0.8)',borderColor:'#EF9F27',borderWidth:2,borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>'R$'+(v.raw/1000).toFixed(1)+'k'}}},scales:{x:{grid:{display:false},ticks:{font:{size:12,family:'Nunito'}}},y:{ticks:{callback:v=>'R$'+(v/1000).toFixed(0)+'k',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
   });
 }
 
 function renderChartCMV(canvasId,cmvs,centro,meta,cor){
   destroyChart(canvasId);
   const el=document.getElementById(canvasId);
-  if(!el||!cmvs.length) return;
+  if(!el) return;
+  if(!cmvs.length){
+    const ctx=el.getContext('2d');
+    if(ctx){ctx.clearRect(0,0,el.width,el.height);ctx.fillStyle='#94A3B8';ctx.font='12px Nunito,sans-serif';ctx.textAlign='center';ctx.fillText('Sem CMV lançado',el.offsetWidth/2||120,70);}
+    return;
+  }
   const labels=cmvs.map(c=>c.semana);
-  const pcts=cmvs.map(c=>c.pct);
+  const pcts=cmvs.map(c=>parseFloat(c.pct));
+  const minVal=Math.max(0,Math.min(...pcts)-5);
+  const maxVal=Math.max(...pcts,meta)+5;
   chartInstances[canvasId]=new Chart(el,{
     type:'line',
     data:{labels,datasets:[
-      {label:'CMV%',data:pcts,borderColor:cor,backgroundColor:cor+'22',tension:0.3,fill:true,pointRadius:4,pointBackgroundColor:cor},
-      {label:'Meta',data:labels.map(()=>meta),borderColor:'#10B981',borderDash:[5,5],pointRadius:0,fill:false}
+      {label:'CMV%',data:pcts,borderColor:cor,backgroundColor:cor+'33',tension:0.3,fill:true,pointRadius:5,pointBackgroundColor:cor,borderWidth:2},
+      {label:'Meta '+meta+'%',data:labels.map(()=>meta),borderColor:'#10B981',borderDash:[6,4],pointRadius:0,fill:false,borderWidth:2}
     ]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{min:20,max:60,ticks:{callback:v=>v+'%',font:{size:9}},grid:{color:'rgba(0,0,0,0.05)'}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{font:{size:10,family:'Nunito'},boxWidth:20}},tooltip:{callbacks:{label:v=>v.dataset.label+': '+v.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{font:{size:10,family:'Nunito'}}},y:{min:minVal,max:maxVal,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}}}
   });
 }
 
