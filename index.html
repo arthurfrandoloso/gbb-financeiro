@@ -423,8 +423,25 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <div class="card-brand">
     <div class="card-title" style="color:var(--brand);">📊 Importar semana — detalhada por centro</div>
     <div class="form-row">
-      <div class="form-group"><label class="form-label">Período</label><input type="text" class="form-input" id="s-periodo" placeholder="S1 · 01-07/04"></div>
+      <div class="form-group"><label class="form-label">Período</label><input type="text" class="form-input" id="s-periodo" placeholder="S1 · 31-06/04"></div>
       <div class="form-group"><label class="form-label">Data início</label><input type="date" class="form-input" id="s-data-ini"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mês de competência</label>
+      <select class="form-input" id="s-mes">
+        <option value="2026-01">Janeiro 2026</option>
+        <option value="2026-02">Fevereiro 2026</option>
+        <option value="2026-03">Março 2026</option>
+        <option value="2026-04" selected>Abril 2026</option>
+        <option value="2026-05">Maio 2026</option>
+        <option value="2026-06">Junho 2026</option>
+        <option value="2026-07">Julho 2026</option>
+        <option value="2026-08">Agosto 2026</option>
+        <option value="2026-09">Setembro 2026</option>
+        <option value="2026-10">Outubro 2026</option>
+        <option value="2026-11">Novembro 2026</option>
+        <option value="2026-12">Dezembro 2026</option>
+      </select>
     </div>
     <div class="semana-campo">
       <span class="rec-dot" style="background:#3B82F6;"></span>
@@ -1091,7 +1108,9 @@ function lancarSemanal(){
   const itensBar=parseFloat((document.getElementById('s-itens-bar')||{}).value)||0;
   const itensCoz=parseFloat((document.getElementById('s-itens-coz')||{}).value)||0;
   const periodo=gv('s-periodo'),dataIni=gv('s-data-ini');
+  const mes=(document.getElementById('s-mes')||{value:''}).value||(dataIni?dataIni.substring(0,7):'2026-04');
   if(!periodo){toast('⚠️ Informe o período','error');return;}
+  if(!dataIni){toast('⚠️ Informe a data início','error');return;}
   const centros=[{id:'s-bar',cat:'Bar'},{id:'s-cozinha',cat:'Cozinha'},{id:'s-pizza',cat:'Pizza'},{id:'s-boliche',cat:'Boliche'},{id:'s-taxa',cat:'Taxa 10%'}];
   let total=0,lançados=0;
   centros.forEach(c=>{const v=pv(c.id);if(v>0){S.semanais.push({id:Date.now()+Math.random(),data:dataIni,mes:mes,cat:c.cat,valor:v,desc:periodo,periodo,itensBar:itensBar,itensCoz:itensCoz});S.saldoCC+=v;total+=v;lançados++;}});
@@ -1537,17 +1556,47 @@ function renderCMVs(){
     const ok=c.pct<=meta&&c.pct>0;
     const cor=ok?'var(--green)':'var(--red)';
     const bg=ok?'var(--green-light)':'var(--red-light)';
-    return `<div class="lancamento-item">
-      <div class="lanc-dot" style="background:${c.centro==='Bar'?'#3B82F6':'#10B981'};"></div>
-      <div class="lanc-info">
-        <div class="lanc-desc">${c.centro} · ${c.semana}</div>
-        <div class="lanc-meta">CMV ${fmt(c.cmv)} · Desp. ${fmt(c.desp||0)} · Fat. ${fmt(c.fat||0)}</div>
+    const corDot=c.centro==='Bar'?'#3B82F6':'#10B981';
+    return `<div style="background:var(--surface);border:1.5px solid ${ok?'var(--green)':'var(--red)'};border-radius:12px;padding:14px;margin-bottom:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:${corDot};"></div>
+          <span style="font-size:13px;font-weight:800;color:var(--text);">${c.centro} · ${c.semana}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="text-align:right;">
+            <div style="font-size:20px;font-weight:800;color:${cor};">${c.pct}%</div>
+            <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${bg};color:${cor};font-weight:700;">${ok?'✓ OK':'⚠ Alto'} · meta ${meta}%</span>
+          </div>
+          <button class="lanc-del" onclick="delCMV(${c.id})">✕</button>
+        </div>
       </div>
-      <div style="text-align:right;margin-right:4px;">
-        <div style="font-size:16px;font-weight:800;color:${cor};">${c.pct}%</div>
-        <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:${bg};color:${cor};font-weight:700;">${ok?'✓ OK':'⚠ Alto'}</span>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">ESTOQUE INICIAL</div>
+          <div style="font-size:13px;font-weight:700;">${fmt(c.ei||0)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">COMPRAS</div>
+          <div style="font-size:13px;font-weight:700;">${fmt(c.compras||0)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">DESPERDÍCIO</div>
+          <div style="font-size:13px;font-weight:700;color:var(--red);">${fmt(c.desp||0)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">ESTOQUE FINAL</div>
+          <div style="font-size:13px;font-weight:700;">${fmt(c.ef||0)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">CMV (R$)</div>
+          <div style="font-size:13px;font-weight:700;color:${cor};">${fmt(c.cmv||0)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:8px 10px;">
+          <div style="font-size:9px;color:var(--text-3);font-weight:700;margin-bottom:2px;">FATURAMENTO</div>
+          <div style="font-size:13px;font-weight:700;">${fmt(c.fat||0)}</div>
+        </div>
       </div>
-      <button class="lanc-del" onclick="delCMV(${c.id})">✕</button>
     </div>`;
   }).join('');
 }
