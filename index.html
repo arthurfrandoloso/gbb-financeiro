@@ -364,6 +364,11 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
         <span class="custo-label">Outros custos</span>
         <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="d-outros" placeholder="0" step="0.01" oninput="calcSobrou()"></div>
       </div>
+      <div class="custo-row">
+        <div class="custo-dot" style="background:#6366F1;"></div>
+        <span class="custo-label">Taxa de cartão</span>
+        <div class="custo-input-wrap"><span class="custo-prefix">R$</span><input type="number" id="d-taxa-cartao" placeholder="0" step="0.01" oninput="calcSobrou()"></div>
+      </div>
     </div>
 
     <div class="resultado-box" id="resultado-box">
@@ -734,7 +739,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
   <div class="card-brand">
     <div class="card-title" style="color:var(--brand);">Demonstrativo de Resultado</div>
     <div class="dre-section-title">Faturamento bruto</div>
-    <div class="dre-row"><span class="dre-label">Total faturado (dias)</span><span class="dre-value" style="color:var(--brand);" id="dre-fat-dia">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label" style="color:var(--text-3);font-size:11px;">Ref. dias lançados</span><span class="dre-value" style="color:var(--text-3);font-size:11px;" id="dre-fat-dia">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Bar (semanal)</span><span class="dre-value" id="dre-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Cozinha (semanal)</span><span class="dre-value" id="dre-cozinha">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Pizza (semanal)</span><span class="dre-value" id="dre-pizza">R$ 0,00</span></div>
@@ -749,6 +754,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="dre-row"><span class="dre-label">Custo taxa estacionamento</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-estac">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Custo taxa bar</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Outros custos diários</span><span class="dre-value" style="color:var(--red);" id="dre-outros">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Taxa de cartão</span><span class="dre-value" style="color:var(--red);" id="dre-taxa-cartao">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Compras Bar</span><span class="dre-value" style="color:var(--red);" id="dre-compras-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Compras Cozinha</span><span class="dre-value" style="color:var(--red);" id="dre-compras-coz">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Compras Pizza</span><span class="dre-value" style="color:var(--red);" id="dre-compras-pizza">R$ 0,00</span></div>
@@ -933,10 +939,11 @@ async function carregarDados() {
     // Mapear de volta para formato interno
     S.dias = dias.map(d => ({
       id:d.id, data:d.data, mes:d.mes, fat:d.fat,
-      custos:{taxa:d.custo_taxa,taxaCoz:d.custo_taxa_coz,taxaBol:d.custo_taxa_bol,taxaEstac:d.custo_taxa_estac,taxaBar:d.custo_taxa_bar,outros:d.custo_outros},
+      custos:{taxa:d.custo_taxa,taxaCoz:d.custo_taxa_coz,taxaBol:d.custo_taxa_bol,taxaEstac:d.custo_taxa_estac,taxaBar:d.custo_taxa_bar,outros:d.custo_outros,taxaCartao:d.custo_taxa_cartao||0},
       totalCustos:d.total_custos, sobrou:d.sobrou,
       retProv:d.ret_prov, retTaxa:d.ret_taxa, retBol:d.ret_bol, totalRet:d.total_ret,
       adultos:d.adultos||0, criancas:d.criancas||0, ticket:d.ticket||0,
+      taxaCartao:d.custo_taxa_cartao||0,
       mes:d.mes||(d.data||'').substring(0,7)
     }));
     S.semanais = semanais.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),periodo:l.periodo,cat:l.cat,valor:l.valor}));
@@ -1052,7 +1059,7 @@ function calcTicket(){
 }
 function calcSobrou(){
   const fat=pv('d-fat-val');
-  const custos=pv('d-taxa')+pv('d-taxa-coz')+pv('d-taxa-bol')+pv('d-taxa-estac')+pv('d-taxa-bar')+pv('d-outros');
+  const custos=pv('d-taxa')+pv('d-taxa-coz')+pv('d-taxa-bol')+pv('d-taxa-estac')+pv('d-taxa-bar')+pv('d-outros')+pv('d-taxa-cartao');
   const retiradas=3000+pv('d-ret-taxa')+pv('d-ret-bol');
   const sobrou=fat-custos-retiradas;
   const box=document.getElementById('resultado-box');
@@ -1068,7 +1075,7 @@ function lancarDia(){
   const fat=pv('d-fat-val');
   if(!data){toast('⚠️ Informe a data','error');return;}
   if(!fat||fat<=0){toast('⚠️ Informe o faturamento','error');return;}
-  const custos={taxa:pv('d-taxa'),taxaCoz:pv('d-taxa-coz'),taxaBol:pv('d-taxa-bol'),taxaEstac:pv('d-taxa-estac'),taxaBar:pv('d-taxa-bar'),outros:pv('d-outros')};
+  const custos={taxa:pv('d-taxa'),taxaCoz:pv('d-taxa-coz'),taxaBol:pv('d-taxa-bol'),taxaEstac:pv('d-taxa-estac'),taxaBar:pv('d-taxa-bar'),outros:pv('d-outros'),taxaCartao:pv('d-taxa-cartao')};
   const totalCustos=Object.values(custos).reduce((a,b)=>a+b,0);
   const sobrou=fat-totalCustos;
   const retProv=3000, retTaxa=pv('d-ret-taxa'), retBol=pv('d-ret-bol');
@@ -1091,7 +1098,7 @@ function lancarDia(){
     adultos:dia.adultos, criancas:dia.criancas, ticket:dia.ticket
   }).catch(e=>toast('⚠️ Erro ao salvar na nuvem','error'));
   // Limpar
-  ['d-fat-val','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-ret-taxa','d-ret-bol','d-adultos','d-criancas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const tickEl=document.getElementById('d-ticket');if(tickEl)tickEl.textContent='—';;
+  ['d-fat-val','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-taxa-cartao','d-ret-taxa','d-ret-bol','d-adultos','d-criancas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const tickEl=document.getElementById('d-ticket');if(tickEl)tickEl.textContent='—';;
   calcSobrou();
   renderDias();atualizarSaldos();
   toast('✓ Dia '+data+' lançado!');
@@ -1260,7 +1267,10 @@ function renderDRE(){
   const piz=S.semanais.filter(l=>l.cat==='Pizza'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
   const bol=S.semanais.filter(l=>l.cat==='Boliche'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
   const tax=S.semanais.filter(l=>l.cat==='Taxa 10%'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
-  const recTotal=fatDia+bar+coz+piz+bol+tax;
+  const fatSemanal=bar+coz+piz+bol+tax;
+  // Faturamento oficial = semanal por centro (mais detalhado)
+  // fatDia usado apenas como referência
+  const recTotal=fatSemanal>0?fatSemanal:fatDia;
   sv('dre-fat-dia',fatDia,'var(--brand)');sv('dre-bar',bar);sv('dre-cozinha',coz);sv('dre-pizza',piz);sv('dre-boliche',bol);sv('dre-taxa',tax);sv('dre-rec-total',recTotal,'var(--brand)');
   const diasFiltro=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro);
   const tSal=diasFiltro.reduce((s,d)=>s+d.custos.taxa,0);
@@ -1269,6 +1279,7 @@ function renderDRE(){
   const tEstac=diasFiltro.reduce((s,d)=>s+d.custos.taxaEstac,0);
   const tBar=diasFiltro.reduce((s,d)=>s+d.custos.taxaBar,0);
   const tOutros=diasFiltro.reduce((s,d)=>s+d.custos.outros,0);
+  const tCartao=diasFiltro.reduce((s,d)=>s+(d.custos.taxaCartao||0),0);
   // CMO Semanal — filtra por mês ou por data se mês não estiver definido
   const cmoEstacSem=S.saidasCC.filter(l=>l.cat==='CMO Estacionamento'&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
   const cmoCaixaSem=S.saidasCC.filter(l=>l.cat==='CMO Caixa'&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
@@ -1288,7 +1299,7 @@ function renderDRE(){
   const despCoz=filtroCat('Desperdício Cozinha');
   const extrasOutros=S.saidasCC.filter(l=>!['CMO Estacionamento','CMO Caixa','CMO Limpeza','Compras Bar','Compras Cozinha','Compras Pizza','Limpeza/Salão','Custo Mobilizado','Cortesia','Desperdício Bar','Desperdício Cozinha'].includes(l.cat)&&((l.mes||l.data||'').substring(0,7)===mesFiltro)).reduce((s,l)=>s+l.valor,0);
   const extras=comprasBar+comprasCoz+comprasPizza+limpezaSalao+mobilizado+cortesias+despBar+despCoz+extrasOutros;
-  const custosTotal=tSal+tCoz+tBol+tEstac+tBar+tOutros+extras;
+  const custosTotal=tSal+tCoz+tBol+tEstac+tBar+tOutros+tCartao+extras;
   sv('dre-taxa-sal',tSal,'var(--red)');sv('dre-taxa-coz',tCoz,'var(--red)');sv('dre-taxa-bol',tBol,'var(--red)');sv('dre-taxa-estac',tEstac,'var(--red)');sv('dre-taxa-bar',tBar,'var(--red)');sv('dre-outros',tOutros,'var(--red)');
   sv('dre-compras-bar',comprasBar,'var(--red)');
   sv('dre-compras-coz',comprasCoz,'var(--red)');
@@ -1742,7 +1753,7 @@ function _renderAnaliseInner(){
   const diasFiltro=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro);
   const fatDia=diasFiltro.reduce((s,d)=>s+d.fat,0);
   const fatSem=S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
-  const fatTotal=fatDia+fatSem;
+  const fatTotal=fatSem>0?fatSem:fatDia;
   const adultos=diasFiltro.reduce((s,d)=>s+(d.adultos||0),0);
   const criancas=diasFiltro.reduce((s,d)=>s+(d.criancas||0),0);
   const ticket=adultos>0?(fatDia/adultos):0;
