@@ -511,6 +511,15 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <button class="btn btn-outline" style="border-color:var(--purple);color:var(--purple);font-family:'Nunito',sans-serif;" onclick="lancarCMOSemanal()">+ Lançar CMO semanal</button>
   </div>
 
+  <div class="card" style="border:1.5px solid var(--brand);">
+    <div class="card-title" style="color:var(--brand);">📲 Copiar resumo semanal completo</div>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group"><label class="form-label">Semana</label><input type="text" class="form-input" id="copy-sem-periodo" placeholder="S1 · 31-06/04"></div>
+    </div>
+    <button class="btn btn-brand" onclick="copiarSemanalCompleto()">📲 Copiar resumo da semana</button>
+    <div id="copy-sem-preview" style="display:none;margin-top:10px;background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--text);border:1.5px solid var(--border);"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">📋 Semanas lançadas</div>
     <div id="lista-semanais"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Nenhuma semana lançada ainda</p></div>
@@ -1660,6 +1669,109 @@ function lancarCMOSemanal(){
   toast('✓ CMO semanal lançado! '+fmt(total));
 }
 
+// ===== COPIAR FECHAMENTO DO DIA =====
+function copiarDia(id){
+  const d=S.dias.find(x=>x.id===id);
+  if(!d) return;
+  function fmtDt(dt){const p=dt.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+  const diasSemana=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const diaSem=diasSemana[new Date(d.data+'T12:00:00').getDay()];
+  let msg='📅 *FECHAMENTO — '+diaSem+' '+fmtDt(d.data)+'*\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='💰 Faturamento: *'+fmt(d.fat)+'*\n';
+  msg+='\n📊 *Custos do dia*\n';
+  if(d.custos.taxa) msg+='  Salão + Puxas: '+fmt(d.custos.taxa)+'\n';
+  if(d.custos.taxaCoz) msg+='  Cozinha: '+fmt(d.custos.taxaCoz)+'\n';
+  if(d.custos.taxaBol) msg+='  Boliche: '+fmt(d.custos.taxaBol)+'\n';
+  if(d.custos.taxaEstac) msg+='  Estacionamento: '+fmt(d.custos.taxaEstac)+'\n';
+  if(d.custos.taxaBar) msg+='  Bar: '+fmt(d.custos.taxaBar)+'\n';
+  if(d.custos.taxaCartao) msg+='  Taxa cartão: '+fmt(d.custos.taxaCartao)+'\n';
+  if(d.custos.outros) msg+='  Outros: '+fmt(d.custos.outros)+'\n';
+  msg+='  *Total custos: '+fmt(d.totalCustos)+'*\n';
+  msg+='\n👑 *Retiradas*\n';
+  msg+='  Provisionada: '+fmt(d.retProv)+'\n';
+  if(d.retTaxa) msg+='  Taxa 10%: '+fmt(d.retTaxa)+'\n';
+  if(d.retBol) msg+='  Boliche: '+fmt(d.retBol)+'\n';
+  msg+='  *Total retiradas: '+fmt(d.totalRet)+'*\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='✅ *Sobrou: '+fmt(d.sobrou)+'*\n';
+  if(d.adultos){
+    msg+='\n👥 *Público*\n';
+    msg+='  Adultos: '+d.adultos+' · Crianças: '+(d.criancas||0)+'\n';
+    msg+='  🎯 Ticket médio: *'+fmt(d.ticket)+'/adulto*';
+  }
+  if(navigator.clipboard) navigator.clipboard.writeText(msg).then(()=>toast('✓ Copiado! Cola no WhatsApp 📲'));
+  else{const el=document.createElement('textarea');el.value=msg;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);toast('✓ Copiado! 📲');}
+}
+
+// ===== COPIAR RESUMO SEMANAL COMPLETO =====
+function copiarSemanalCompleto(){
+  const periodo=gv('copy-sem-periodo');
+  if(!periodo){toast('⚠️ Informe a semana','error');return;}
+
+  // Faturamento por centro
+  const semFiltro=S.semanais.filter(l=>l.periodo===periodo||l.desc===periodo);
+  const fat={Bar:0,Cozinha:0,Pizza:0,Boliche:0,'Taxa 10%':0};
+  let fatTotal=0,itensBar=0,itensCoz=0;
+  semFiltro.forEach(l=>{
+    if(fat[l.cat]!==undefined) fat[l.cat]+=l.valor;
+    fatTotal+=l.valor;
+    if(l.itensBar) itensBar+=l.itensBar;
+    if(l.itensCoz) itensCoz+=l.itensCoz;
+  });
+
+  // CMV da semana
+  const cmvSem=S.cmvs.filter(x=>x.semana===periodo);
+  const cmvCoz=cmvSem.find(x=>x.centro==='Cozinha');
+  const cmvBar=cmvSem.find(x=>x.centro==='Bar');
+
+  // Saídas da semana (por data)
+  const diasSem=semFiltro.map(l=>l.data).filter(Boolean);
+  const datMin=diasSem.length?diasSem.reduce((a,b)=>a<b?a:b):'';
+  const datMax=diasSem.length?diasSem.reduce((a,b)=>a>b?a:b):'';
+  const saidas=S.saidasCC.filter(l=>l.data>=datMin&&l.data<=datMax);
+  const totCat={};
+  saidas.forEach(l=>{totCat[l.cat]=(totCat[l.cat]||0)+l.valor;});
+  const totalSaidas=saidas.reduce((s,l)=>s+l.valor,0);
+
+  if(!fatTotal&&!totalSaidas){toast('⚠️ Nenhum dado encontrado para "'+periodo+'"','error');return;}
+
+  let msg='📊 *RESUMO SEMANAL — '+periodo+'*\n';
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  msg+='💰 *FATURAMENTO*\n';
+  if(fat.Bar) msg+='  🍺 Bar: '+fmt(fat.Bar)+'\n';
+  if(fat.Cozinha) msg+='  🍳 Cozinha: '+fmt(fat.Cozinha)+'\n';
+  if(fat.Pizza) msg+='  🍕 Pizza: '+fmt(fat.Pizza)+'\n';
+  if(fat.Boliche) msg+='  🎳 Boliche: '+fmt(fat.Boliche)+'\n';
+  if(fat['Taxa 10%']) msg+='  💸 Taxa 10%: '+fmt(fat['Taxa 10%'])+'\n';
+  msg+='  *Total: '+fmt(fatTotal)+'*\n';
+  if(itensBar||itensCoz){
+    msg+='\n📦 *Itens vendidos*\n';
+    if(itensBar) msg+='  Bar: '+itensBar+' itens\n';
+    if(itensCoz) msg+='  Cozinha: '+itensCoz+' itens\n';
+  }
+  if(cmvCoz||cmvBar){
+    msg+='\n📦 *CMV*\n';
+    if(cmvCoz) msg+='  🍳 Cozinha: '+cmvCoz.pct+'% '+(cmvCoz.pct<=35?'✅':'⚠️')+'\n';
+    if(cmvBar) msg+='  🍺 Bar: '+cmvBar.pct+'% '+(cmvBar.pct<=38?'✅':'⚠️')+'\n';
+  }
+  if(totalSaidas){
+    msg+='\n💸 *SAÍDAS*\n';
+    Object.entries(totCat).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
+      msg+='  '+cat+': '+fmt(val)+'\n';
+    });
+    msg+='  *Total saídas: '+fmt(totalSaidas)+'*\n';
+  }
+  msg+='━━━━━━━━━━━━━━━━━━\n';
+  const margem=fatTotal>0?((fatTotal-totalSaidas)/fatTotal*100):0;
+  msg+='📈 Margem aprox.: *'+margem.toFixed(1)+'%*';
+
+  const prev=document.getElementById('copy-sem-preview');
+  if(prev){prev.style.display='';prev.textContent=msg;}
+  if(navigator.clipboard) navigator.clipboard.writeText(msg).then(()=>toast('✓ Copiado! Cola no WhatsApp 📲'));
+  else{const el=document.createElement('textarea');el.value=msg;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);toast('✓ Copiado! 📲');}
+}
+
 function copiarSaidasWhatsapp(){
   const de = gv('copy-de');
   const ate = gv('copy-ate');
@@ -1882,11 +1994,35 @@ function calcProlabore(){
   const elProv=document.getElementById('dre-ret-prov'); if(elProv){elProv.textContent=fmt(prov);if(elProv.dataset.orig)elProv.dataset.orig=fmt(prov);}
 }
 function copiarDRE(){
-  const fat=S.dias.reduce((s,d)=>s+d.fat,0)+S.semanais.reduce((s,l)=>s+l.valor,0);
-  const ret=S.dias.reduce((s,d)=>s+d.totalRet,0);
-  const txt='📊 DRE GBB · '+new Date().toLocaleDateString('pt-BR')+'\n\n💰 Faturamento: '+fmt(fat)+'\n💳 Saldo CC: '+fmt(S.saldoCC)+'\n🏦 Provisionada: '+fmt(S.saldoProv)+'\n👑 Retiradas: '+fmt(ret)+'\n📈 Margem: '+(fat>0?(S.saldoCC/fat*100).toFixed(1):0)+'%';
-  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast('✓ Copiado!'));
-  else{const el=document.createElement('textarea');el.value=txt;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);toast('✓ Copiado!');}
+  const mesFiltro=S.mesFiltro||'2026-04';
+  const nomeMes={'2026-01':'Janeiro','2026-02':'Fevereiro','2026-03':'Março','2026-04':'Abril','2026-05':'Maio','2026-06':'Junho','2026-07':'Julho','2026-08':'Agosto','2026-09':'Setembro','2026-10':'Outubro','2026-11':'Novembro','2026-12':'Dezembro'};
+  const mes=nomeMes[mesFiltro]||mesFiltro;
+  const fatSem=S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const fatDia=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+d.fat,0);
+  const fat=fatSem>0?fatSem:fatDia;
+  const custosDia=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+d.totalCustos,0);
+  const saidas=S.saidasCC.filter(l=>(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const ret=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+d.totalRet,0);
+  const provGasto=S.prov.filter(l=>l.tipo==='saida'&&(l.mes||l.data||'').substring(0,7)===mesFiltro).reduce((s,l)=>s+l.valor,0);
+  const adultos=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro).reduce((s,d)=>s+(d.adultos||0),0);
+  const ticket=adultos>0?(fatDia/adultos):0;
+  const margem=fat>0?((fat-custosDia-saidas)/fat*100):0;
+
+  let txt='📊 *DRE — '+mes+' 2026*\n';
+  txt+='━━━━━━━━━━━━━━━━━━\n';
+  txt+='💰 *Faturamento: '+fmt(fat)+'*\n';
+  txt+='📉 Custos operacionais: '+fmt(custosDia)+'\n';
+  txt+='🛒 Compras/saídas: '+fmt(saidas)+'\n';
+  txt+='🏦 Gasto provisionada: '+fmt(provGasto)+'\n';
+  txt+='━━━━━━━━━━━━━━━━━━\n';
+  txt+='💳 Saldo CC: *'+fmt(S.saldoCC)+'*\n';
+  txt+='🏦 Provisionada: *'+fmt(S.saldoProv)+'*\n';
+  txt+='👑 Retiradas sócios: '+fmt(ret)+'\n';
+  txt+='📈 Margem: *'+margem.toFixed(1)+'%*\n';
+  if(adultos>0) txt+='🎯 Ticket médio: *'+fmt(ticket)+'/adulto* ('+adultos+' adultos)';
+
+  if(navigator.clipboard)navigator.clipboard.writeText(txt).then(()=>toast('✓ Copiado! Cola no WhatsApp 📲'));
+  else{const el=document.createElement('textarea');el.value=txt;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);toast('✓ Copiado! 📲');}
 }
 
 // INIT
