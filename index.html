@@ -320,9 +320,15 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
       </div>
     </div>
     <div id="aviso-mes" style="display:none;background:var(--brand-light);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#92400E;font-weight:600;"></div>
-    <div class="form-group">
-      <label class="form-label">Faturamento total (R$)</label>
-      <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou();calcTicket()">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Faturamento total (R$)</label>
+        <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou();calcTicket()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Receita Financeira (R$)</label>
+        <input type="number" class="form-input" id="d-rec-fin" placeholder="0,00" step="0.01" oninput="calcSobrou()">
+      </div>
     </div>
 
     <div class="section-label">Custos do dia</div>
@@ -753,6 +759,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="card-title" style="color:var(--brand);">Demonstrativo de Resultado</div>
     <div class="dre-section-title">Faturamento bruto</div>
     <div class="dre-row"><span class="dre-label" style="color:var(--text-3);font-size:11px;">Ref. dias lançados</span><span class="dre-value" style="color:var(--text-3);font-size:11px;" id="dre-fat-dia">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">Receita Financeira</span><span class="dre-value" style="color:var(--green);" id="dre-rec-fin">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Bar (semanal)</span><span class="dre-value" id="dre-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Cozinha (semanal)</span><span class="dre-value" id="dre-cozinha">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Pizza (semanal)</span><span class="dre-value" id="dre-pizza">R$ 0,00</span></div>
@@ -952,6 +959,7 @@ async function carregarDados() {
     // Mapear de volta para formato interno
     S.dias = dias.map(d => ({
       id:d.id, data:d.data, mes:d.mes, fat:d.fat,
+      recFin:d.rec_fin||0,
       custos:{taxa:d.custo_taxa,taxaCoz:d.custo_taxa_coz,taxaBol:d.custo_taxa_bol,taxaEstac:d.custo_taxa_estac,taxaBar:d.custo_taxa_bar,outros:d.custo_outros,taxaCartao:d.custo_taxa_cartao||0},
       totalCustos:d.total_custos, sobrou:d.sobrou,
       retProv:d.ret_prov, retTaxa:d.ret_taxa, retBol:d.ret_bol, totalRet:d.total_ret,
@@ -981,7 +989,7 @@ async function carregarDados() {
 
 function recalcularSaldos() {
   let cc = CC_INI;
-  S.dias.forEach(d => { cc += (d.fat - d.totalCustos - d.retProv - d.retTaxa - d.retBol); });
+  S.dias.forEach(d => { cc += (d.fat - d.totalCustos - d.retProv - d.retTaxa - d.retBol) + (d.recFin||0); });
   S.semanais.forEach(l => { cc += l.valor; });
   S.saidasCC.forEach(l => { cc -= l.valor; });
   let prov = PROV_INI;
@@ -1052,6 +1060,7 @@ function toggleOpcional(){
 // CALC SOBROU
 function calcTicket(){
   const fat=parseFloat((document.getElementById('d-fat-val')||{}).value)||0;
+  const recFin=pv('d-rec-fin');
   const adultos=parseFloat((document.getElementById('d-adultos')||{}).value)||0;
   const el=document.getElementById('d-ticket');
   if(!el) return;
@@ -1093,17 +1102,18 @@ function lancarDia(){
   const sobrou=fat-totalCustos;
   const retProv=3000, retTaxa=pv('d-ret-taxa'), retBol=pv('d-ret-bol');
   const totalRet=retProv+retTaxa+retBol;
+  const recFin=pv('d-rec-fin');
   const adultos=parseFloat((document.getElementById('d-adultos')||{}).value)||0;
   const criancas=parseFloat((document.getElementById('d-criancas')||{}).value)||0;
   const ticket=adultos>0?parseFloat((fat/adultos).toFixed(2)):0;
-  const dia={id:Date.now(),data,mes,fat,custos,totalCustos,sobrou,retProv,retTaxa,retBol,totalRet,adultos,criancas,ticket};
+  const dia={id:Date.now(),data,mes,fat,recFin,custos,totalCustos,sobrou,retProv,retTaxa,retBol,totalRet,adultos,criancas,ticket};
   S.dias.push(dia);
-  S.saldoCC+=(fat-totalCustos-retProv-retTaxa-retBol);
+  S.saldoCC+=(fat-totalCustos-retProv-retTaxa-retBol)+(recFin||0);
   S.saldoProv-=retProv;
   salvar();
   // Salvar no Supabase
   sbInsert('dias', {
-    id:dia.id, data:dia.data, mes:dia.mes, fat:dia.fat,
+    id:dia.id, data:dia.data, mes:dia.mes, fat:dia.fat, rec_fin:dia.recFin||0,
     custo_taxa:custos.taxa, custo_taxa_coz:custos.taxaCoz, custo_taxa_bol:custos.taxaBol,
     custo_taxa_estac:custos.taxaEstac, custo_taxa_bar:custos.taxaBar, custo_outros:custos.outros,
     total_custos:totalCustos, sobrou:sobrou,
@@ -1111,7 +1121,7 @@ function lancarDia(){
     adultos:dia.adultos, criancas:dia.criancas, ticket:dia.ticket
   }).catch(e=>toast('⚠️ Erro ao salvar na nuvem','error'));
   // Limpar
-  ['d-fat-val','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-taxa-cartao','d-ret-taxa','d-ret-bol','d-adultos','d-criancas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const tickEl=document.getElementById('d-ticket');if(tickEl)tickEl.textContent='—';;
+  ['d-fat-val','d-rec-fin','d-taxa','d-taxa-coz','d-taxa-bol','d-taxa-estac','d-taxa-bar','d-outros','d-taxa-cartao','d-ret-taxa','d-ret-bol','d-adultos','d-criancas'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});const tickEl=document.getElementById('d-ticket');if(tickEl)tickEl.textContent='—';;
   calcSobrou();
   renderDias();atualizarSaldos();
   toast('✓ Dia '+data+' lançado!');
@@ -1283,7 +1293,7 @@ function renderDRE(){
   const fatSemanal=bar+coz+piz+bol+tax;
   // Faturamento oficial = semanal por centro (mais detalhado)
   // fatDia usado apenas como referência
-  const recTotal=fatSemanal>0?fatSemanal:fatDia;
+  const recTotal=(fatSemanal>0?fatSemanal:fatDia)+recFinTotal;
   sv('dre-fat-dia',fatDia,'var(--brand)');sv('dre-bar',bar);sv('dre-cozinha',coz);sv('dre-pizza',piz);sv('dre-boliche',bol);sv('dre-taxa',tax);sv('dre-rec-total',recTotal,'var(--brand)');
   const diasFiltro=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mesFiltro);
   const tSal=diasFiltro.reduce((s,d)=>s+d.custos.taxa,0);
@@ -1683,6 +1693,7 @@ function copiarDia(id){
   let msg='📅 *FECHAMENTO — '+diaSem+' '+fmtDt(d.data)+'*\n';
   msg+='━━━━━━━━━━━━━━━━━━\n';
   msg+='💰 Faturamento: *'+fmt(d.fat)+'*\n';
+  if(d.recFin) msg+='💵 Receita Financeira: *'+fmt(d.recFin)+'*\n';
   msg+='\n📊 *Custos do dia*\n';
   if(d.custos.taxa) msg+='  Salão + Puxas: '+fmt(d.custos.taxa)+'\n';
   if(d.custos.taxaCoz) msg+='  Cozinha: '+fmt(d.custos.taxaCoz)+'\n';
