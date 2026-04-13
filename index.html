@@ -513,10 +513,14 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
 
   <div class="card" style="border:1.5px solid var(--brand);">
     <div class="card-title" style="color:var(--brand);">📲 Copiar resumo semanal completo</div>
-    <div class="form-row" style="margin-bottom:10px;">
-      <div class="form-group"><label class="form-label">Semana</label><input type="text" class="form-input" id="copy-sem-periodo" placeholder="S1 · 31-06/04"></div>
+    <div class="form-row" style="margin-bottom:8px;">
+      <div class="form-group"><label class="form-label">Período (nome)</label><input type="text" class="form-input" id="copy-sem-periodo" placeholder="S1 · 31-06/04"></div>
     </div>
-    <button class="btn btn-brand" onclick="copiarSemanalCompleto()">📲 Copiar resumo da semana</button>
+    <div class="form-row" style="margin-bottom:10px;">
+      <div class="form-group"><label class="form-label">Data início</label><input type="date" class="form-input" id="copy-sem-de"></div>
+      <div class="form-group"><label class="form-label">Data fim</label><input type="date" class="form-input" id="copy-sem-ate"></div>
+    </div>
+    <button class="btn btn-brand" onclick="copiarSemanalCompleto()">📲 Gerar e copiar resumo</button>
     <div id="copy-sem-preview" style="display:none;margin-top:10px;background:var(--bg);border-radius:8px;padding:12px;font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--text);border:1.5px solid var(--border);"></div>
   </div>
 
@@ -1707,10 +1711,18 @@ function copiarDia(id){
 // ===== COPIAR RESUMO SEMANAL COMPLETO =====
 function copiarSemanalCompleto(){
   const periodo=gv('copy-sem-periodo');
-  if(!periodo){toast('⚠️ Informe a semana','error');return;}
+  const de=gv('copy-sem-de');
+  const ate=gv('copy-sem-ate');
+  if(!de||!ate){toast('⚠️ Informe as datas início e fim','error');return;}
 
-  // Faturamento por centro
-  const semFiltro=S.semanais.filter(l=>l.periodo===periodo||l.desc===periodo);
+  const label=periodo||(de.split('-').reverse().slice(0,2).join('/')+' a '+ate.split('-').reverse().slice(0,2).join('/'));
+
+  // Faturamento por centro (pelo período)
+  const semFiltro=S.semanais.filter(l=>{
+    if(periodo&&(l.periodo===periodo||l.desc===periodo)) return true;
+    if(l.data&&l.data>=de&&l.data<=ate) return true;
+    return false;
+  });
   const fat={Bar:0,Cozinha:0,Pizza:0,Boliche:0,'Taxa 10%':0};
   let fatTotal=0,itensBar=0,itensCoz=0;
   semFiltro.forEach(l=>{
@@ -1720,50 +1732,92 @@ function copiarSemanalCompleto(){
     if(l.itensCoz) itensCoz+=l.itensCoz;
   });
 
+  // Dias dentro do período
+  const diasPeriodo=S.dias.filter(d=>d.data>=de&&d.data<=ate);
+  const nDias=diasPeriodo.length;
+
+  // Custos diários acumulados da semana
+  const custoSalao=diasPeriodo.reduce((s,d)=>s+(d.custos.taxa||0),0);
+  const custoCoz=diasPeriodo.reduce((s,d)=>s+(d.custos.taxaCoz||0),0);
+  const custoBol=diasPeriodo.reduce((s,d)=>s+(d.custos.taxaBol||0),0);
+  const custoEstac=diasPeriodo.reduce((s,d)=>s+(d.custos.taxaEstac||0),0);
+  const custoBar=diasPeriodo.reduce((s,d)=>s+(d.custos.taxaBar||0),0);
+  const custoCartao=diasPeriodo.reduce((s,d)=>s+(d.custos.taxaCartao||0),0);
+  const custoOutros=diasPeriodo.reduce((s,d)=>s+(d.custos.outros||0),0);
+  const totalCustosDia=custoSalao+custoCoz+custoBol+custoEstac+custoBar+custoCartao+custoOutros;
+
+  // Público e ticket
+  const totalAdultos=diasPeriodo.reduce((s,d)=>s+(d.adultos||0),0);
+  const totalCriancas=diasPeriodo.reduce((s,d)=>s+(d.criancas||0),0);
+  const fatDias=diasPeriodo.reduce((s,d)=>s+d.fat,0);
+  const ticketMed=totalAdultos>0?(fatDias/totalAdultos):0;
+
   // CMV da semana
-  const cmvSem=S.cmvs.filter(x=>x.semana===periodo);
+  const cmvSem=S.cmvs.filter(x=>periodo?(x.semana===periodo):(x.mes&&true));
   const cmvCoz=cmvSem.find(x=>x.centro==='Cozinha');
   const cmvBar=cmvSem.find(x=>x.centro==='Bar');
 
-  // Saídas da semana (por data)
-  const diasSem=semFiltro.map(l=>l.data).filter(Boolean);
-  const datMin=diasSem.length?diasSem.reduce((a,b)=>a<b?a:b):'';
-  const datMax=diasSem.length?diasSem.reduce((a,b)=>a>b?a:b):'';
-  const saidas=S.saidasCC.filter(l=>l.data>=datMin&&l.data<=datMax);
+  // Saídas CC no período
+  const saidas=S.saidasCC.filter(l=>l.data>=de&&l.data<=ate);
   const totCat={};
   saidas.forEach(l=>{totCat[l.cat]=(totCat[l.cat]||0)+l.valor;});
   const totalSaidas=saidas.reduce((s,l)=>s+l.valor,0);
 
-  if(!fatTotal&&!totalSaidas){toast('⚠️ Nenhum dado encontrado para "'+periodo+'"','error');return;}
+  const fmtDt=d=>d.split('-').reverse().slice(0,2).join('/');
 
-  let msg='📊 *RESUMO SEMANAL — '+periodo+'*\n';
+  let msg='📊 *RESUMO SEMANAL — '+label+'*\n';
+  msg+='📅 '+fmtDt(de)+' a '+fmtDt(ate)+' ('+nDias+' dias)\n';
   msg+='━━━━━━━━━━━━━━━━━━\n';
-  msg+='💰 *FATURAMENTO*\n';
+
+  msg+='💰 *FATURAMENTO POR CENTRO*\n';
   if(fat.Bar) msg+='  🍺 Bar: '+fmt(fat.Bar)+'\n';
   if(fat.Cozinha) msg+='  🍳 Cozinha: '+fmt(fat.Cozinha)+'\n';
   if(fat.Pizza) msg+='  🍕 Pizza: '+fmt(fat.Pizza)+'\n';
   if(fat.Boliche) msg+='  🎳 Boliche: '+fmt(fat.Boliche)+'\n';
   if(fat['Taxa 10%']) msg+='  💸 Taxa 10%: '+fmt(fat['Taxa 10%'])+'\n';
-  msg+='  *Total: '+fmt(fatTotal)+'*\n';
+  if(fatTotal) msg+='  *Total: '+fmt(fatTotal)+'*\n';
+
   if(itensBar||itensCoz){
     msg+='\n📦 *Itens vendidos*\n';
-    if(itensBar) msg+='  Bar: '+itensBar+' itens\n';
-    if(itensCoz) msg+='  Cozinha: '+itensCoz+' itens\n';
+    if(itensBar) msg+='  🍺 Bar: '+itensBar+' itens\n';
+    if(itensCoz) msg+='  🍳 Cozinha: '+itensCoz+' itens\n';
   }
+
+  if(totalAdultos>0){
+    msg+='\n👥 *Público*\n';
+    msg+='  Adultos: '+totalAdultos+' · Crianças: '+totalCriancas+'\n';
+    msg+='  🎯 Ticket médio: *'+fmt(ticketMed)+'/adulto*\n';
+  }
+
+  if(totalCustosDia>0){
+    msg+='\n⚙️ *CUSTOS OPERACIONAIS*\n';
+    if(custoSalao) msg+='  Salão + Puxas: '+fmt(custoSalao)+'\n';
+    if(custoCoz) msg+='  Cozinha: '+fmt(custoCoz)+'\n';
+    if(custoBol) msg+='  Boliche: '+fmt(custoBol)+'\n';
+    if(custoEstac) msg+='  Estacionamento: '+fmt(custoEstac)+'\n';
+    if(custoBar) msg+='  Bar: '+fmt(custoBar)+'\n';
+    if(custoCartao) msg+='  Taxa cartão: '+fmt(custoCartao)+'\n';
+    if(custoOutros) msg+='  Outros: '+fmt(custoOutros)+'\n';
+    msg+='  *Total: '+fmt(totalCustosDia)+'*\n';
+  }
+
   if(cmvCoz||cmvBar){
     msg+='\n📦 *CMV*\n';
-    if(cmvCoz) msg+='  🍳 Cozinha: '+cmvCoz.pct+'% '+(cmvCoz.pct<=35?'✅':'⚠️')+'\n';
-    if(cmvBar) msg+='  🍺 Bar: '+cmvBar.pct+'% '+(cmvBar.pct<=38?'✅':'⚠️')+'\n';
+    if(cmvCoz) msg+='  🍳 Cozinha: '+cmvCoz.pct+'% '+(cmvCoz.pct<=35?'✅':'⚠️')+' (meta 35%)\n';
+    if(cmvBar) msg+='  🍺 Bar: '+cmvBar.pct+'% '+(cmvBar.pct<=38?'✅':'⚠️')+' (meta 38%)\n';
   }
-  if(totalSaidas){
-    msg+='\n💸 *SAÍDAS*\n';
+
+  if(totalSaidas>0){
+    msg+='\n🛒 *COMPRAS / SAÍDAS*\n';
     Object.entries(totCat).sort((a,b)=>b[1]-a[1]).forEach(([cat,val])=>{
       msg+='  '+cat+': '+fmt(val)+'\n';
     });
-    msg+='  *Total saídas: '+fmt(totalSaidas)+'*\n';
+    msg+='  *Total: '+fmt(totalSaidas)+'*\n';
   }
+
   msg+='━━━━━━━━━━━━━━━━━━\n';
-  const margem=fatTotal>0?((fatTotal-totalSaidas)/fatTotal*100):0;
+  const totalGeral=totalCustosDia+totalSaidas;
+  const margem=fatTotal>0?((fatTotal-totalGeral)/fatTotal*100):0;
   msg+='📈 Margem aprox.: *'+margem.toFixed(1)+'%*';
 
   const prev=document.getElementById('copy-sem-preview');
