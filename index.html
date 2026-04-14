@@ -320,16 +320,11 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
       </div>
     </div>
     <div id="aviso-mes" style="display:none;background:var(--brand-light);border-left:3px solid var(--brand);border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:10px;font-size:11px;color:#92400E;font-weight:600;"></div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Faturamento total (R$)</label>
-        <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou();calcTicket()">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Receita Financeira (R$)</label>
-        <input type="number" class="form-input" id="d-rec-fin" placeholder="0,00" step="0.01" oninput="calcSobrou()">
-      </div>
+    <div class="form-group">
+      <label class="form-label">Faturamento total (R$)</label>
+      <input type="number" class="form-input" id="d-fat-val" placeholder="0,00" step="0.01" oninput="calcSobrou();calcTicket()">
     </div>
+
 
     <div class="section-label">Custos do dia</div>
 
@@ -679,6 +674,24 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <button class="btn btn-red" onclick="lancarSaidaCC()">− Lançar saída</button>
   </div>
 
+  <div class="card-green">
+    <div class="card-title" style="color:var(--green);">+ Entrada — Conta Corrente</div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Data</label><input type="date" class="form-input" id="entrada-cc-data"></div>
+      <div class="form-group"><label class="form-label">Categoria</label>
+        <select class="form-input" id="entrada-cc-cat">
+          <option value="Receita Financeira">Receita Financeira</option>
+          <option value="Outros Entrada CC">Outros</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Valor (R$)</label><input type="number" class="form-input" id="entrada-cc-valor" placeholder="0,00" step="0.01"></div>
+      <div class="form-group"><label class="form-label">Descrição</label><input type="text" class="form-input" id="entrada-cc-desc" placeholder="Descrição..."></div>
+    </div>
+    <button class="btn btn-green" onclick="lancarEntradaCC()">+ Lançar entrada</button>
+  </div>
+
   <div class="card">
     <div class="card-title">Histórico de saídas</div>
     <div id="lista-saidas"><p style="font-size:12px;color:var(--text-3);text-align:center;padding:10px 0;">Nenhuma saída lançada</p></div>
@@ -759,7 +772,7 @@ select.form-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http
     <div class="card-title" style="color:var(--brand);">Demonstrativo de Resultado</div>
     <div class="dre-section-title">Faturamento bruto</div>
     <div class="dre-row"><span class="dre-label" style="color:var(--text-3);font-size:11px;">Ref. dias lançados</span><span class="dre-value" style="color:var(--text-3);font-size:11px;" id="dre-fat-dia">R$ 0,00</span></div>
-    <div class="dre-row"><span class="dre-label">Receita Financeira</span><span class="dre-value" style="color:var(--green);" id="dre-rec-fin">R$ 0,00</span></div>
+    <div class="dre-row"><span class="dre-label">💵 Receita Financeira</span><span class="dre-value" style="color:var(--green);" id="dre-rec-fin">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Bar (semanal)</span><span class="dre-value" id="dre-bar">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Cozinha (semanal)</span><span class="dre-value" id="dre-cozinha">R$ 0,00</span></div>
     <div class="dre-row"><span class="dre-label">Pizza (semanal)</span><span class="dre-value" id="dre-pizza">R$ 0,00</span></div>
@@ -956,6 +969,14 @@ async function carregarDados() {
     const [dias, semanais, saidas, prov, cmvs] = await Promise.all([
       sbGet('dias'), sbGet('semanais'), sbGet('saidas_cc'), sbGet('provisionada'), sbGet('cmv')
     ]);
+
+    // Guardar IDs que já estão no banco
+    const idsDias = new Set(dias.map(d=>d.id));
+    const idsSemanais = new Set(semanais.map(l=>l.id));
+    const idsSaidas = new Set(saidas.map(l=>l.id));
+    const idsProv = new Set(prov.map(l=>l.id));
+    const idsCmvs = new Set((cmvs||[]).map(l=>l.id));
+
     // Mapear de volta para formato interno
     S.dias = dias.map(d => ({
       id:d.id, data:d.data, mes:d.mes, fat:d.fat,
@@ -971,15 +992,24 @@ async function carregarDados() {
     S.saidasCC = saidas.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao}));
     S.prov = prov.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao,tipo:l.tipo}));
     S.cmvs = (cmvs||[]).map(l => ({id:l.id,semana:l.semana,mes:l.mes,centro:l.centro,ei:l.ei,compras:l.compras,desp:l.desperdicio,ef:l.ef,fat:l.faturamento,cmv:l.cmv_valor,pct:l.cmv_pct}));
+    // Mesclar com dados locais que ainda não foram para o banco
+    const local = JSON.parse(localStorage.getItem('gbb_v4')||'null');
+    if(local) {
+      if(local.dias) local.dias.filter(d=>!idsDias.has(d.id)).forEach(d=>S.dias.push(d));
+      if(local.semanais) local.semanais.filter(l=>!idsSemanais.has(l.id)).forEach(l=>S.semanais.push(l));
+      if(local.saidasCC) local.saidasCC.filter(l=>!idsSaidas.has(l.id)).forEach(l=>S.saidasCC.push(l));
+      if(local.prov) local.prov.filter(l=>!idsProv.has(l.id)).forEach(l=>S.prov.push(l));
+      if(local.cmvs) local.cmvs.filter(l=>!idsCmvs.has(l.id)).forEach(l=>S.cmvs.push(l));
+    }
+
     // Recalcular saldos
     recalcularSaldos();
     localStorage.setItem('gbb_v4', JSON.stringify(S));
   } catch(e) {
     console.error('Erro ao carregar:', e);
     // fallback localStorage
-    const local = JSON.parse(localStorage.getItem('gbb_v4')||'null');
-    if(local&&local.cmvs) S.cmvs=local.cmvs;
-    if(local) S = {...S,...local};
+    const localFallback = JSON.parse(localStorage.getItem('gbb_v4')||'null');
+    if(localFallback) { S.dias=localFallback.dias||[]; S.semanais=localFallback.semanais||[]; S.saidasCC=localFallback.saidasCC||[]; S.prov=localFallback.prov||[]; S.cmvs=localFallback.cmvs||[]; }
     toast('⚠️ Usando dados locais (sem internet)','error');
   }
   mostrarLoading(false);
@@ -991,7 +1021,7 @@ function recalcularSaldos() {
   let cc = CC_INI;
   S.dias.forEach(d => { cc += (d.fat - d.totalCustos - d.retProv - d.retTaxa - d.retBol) + (d.recFin||0); });
   S.semanais.forEach(l => { cc += l.valor; });
-  S.saidasCC.forEach(l => { cc -= l.valor; });
+  S.saidasCC.forEach(l => { if(l.tipo==='entrada') cc+=l.valor; else cc-=l.valor; });
   let prov = PROV_INI;
   // Transferências diárias entram na provisionada
   S.dias.forEach(d => { prov += (d.retProv||0); });
@@ -1155,6 +1185,26 @@ function lancarSemanal(){
 }
 
 // SAÍDAS CC
+function lancarEntradaCC(){
+  const data=gv('entrada-cc-data');
+  const cat=gv('entrada-cc-cat');
+  const valor=pv('entrada-cc-valor');
+  const desc=gv('entrada-cc-desc');
+  if(!valor||valor<=0){toast('⚠️ Informe um valor','error');return;}
+  if(!data){toast('⚠️ Informe a data','error');return;}
+  const mes=data.substring(0,7);
+  // Entrada — saldo CC sobe
+  const obj={id:Date.now(),data,mes,cat,valor,desc,tipo:'entrada'};
+  S.saidasCC.push(obj);
+  S.saldoCC+=valor;
+  sbInsert('saidas_cc',{id:obj.id,data,mes,cat,valor,descricao:desc}).catch(e=>console.error(e));
+  salvar();
+  document.getElementById('entrada-cc-valor').value='';
+  document.getElementById('entrada-cc-desc').value='';
+  renderSaidasCC();atualizarSaldos();
+  toast('✓ Entrada lançada: '+fmt(valor));
+}
+
 function lancarSaidaCC(){
   const data=gv('saida-data'),cat=gv('saida-cat'),valor=pv('saida-valor'),desc=gv('saida-desc');
   if(!valor||valor<=0){toast('⚠️ Informe um valor','error');return;}
@@ -1188,7 +1238,7 @@ function lancarEntradaProv(){
 // DELETE
 function delDia(id){if(!confirm('Remover?'))return;const d=S.dias.find(x=>x.id===id);if(d){S.saldoCC-=(d.fat-d.totalCustos-d.retProv-d.retTaxa-d.retBol);S.saldoProv+=d.retProv;S.dias=S.dias.filter(x=>x.id!==id);sbDelete('dias',id).catch(e=>console.error(e));}salvar();renderDias();atualizarSaldos();toast('✓ Removido');}
 function delSemanal(id){if(!confirm('Remover?'))return;const l=S.semanais.find(x=>x.id===id);if(l){S.saldoCC-=l.valor;S.semanais=S.semanais.filter(x=>x.id!==id);sbDelete('semanais',id).catch(e=>console.error(e));}salvar();renderSemanais();atualizarSaldos();toast('✓ Removido');}
-function delSaida(id){if(!confirm('Remover?'))return;const l=S.saidasCC.find(x=>x.id===id);if(l){S.saldoCC+=l.valor;S.saidasCC=S.saidasCC.filter(x=>x.id!==id);sbDelete('saidas_cc',id).catch(e=>console.error(e));}salvar();renderSaidasCC();atualizarSaldos();toast('✓ Removido');}
+function delSaida(id){if(!confirm('Remover?'))return;const l=S.saidasCC.find(x=>x.id===id);if(l){if(l.tipo==='entrada')S.saldoCC-=l.valor;else S.saldoCC+=l.valor;S.saidasCC=S.saidasCC.filter(x=>x.id!==id);sbDelete('saidas_cc',id).catch(e=>console.error(e));}salvar();renderSaidasCC();atualizarSaldos();toast('✓ Removido');}
 function delProv(id){if(!confirm('Remover?'))return;const l=S.prov.find(x=>x.id===id);if(l){if(l.tipo==='saida')S.saldoProv+=l.valor;else S.saldoProv-=l.valor;S.prov=S.prov.filter(x=>x.id!==id);sbDelete('provisionada',id).catch(e=>console.error(e));}salvar();renderProv();atualizarSaldos();toast('✓ Removido');}
 
 // RENDER DIAS
@@ -1225,7 +1275,7 @@ function renderSaidasCC(){
   el.innerHTML=[...S.saidasCC].reverse().map(l=>`
     <div class="lancamento-item">
       <div class="lanc-info"><div class="lanc-desc">${l.desc||l.cat}</div><div class="lanc-meta">${l.cat} · ${l.data||'—'}</div></div>
-      <div class="lanc-valor" style="color:var(--red);">-${fmt(l.valor)}</div>
+      <div class="lanc-valor" style="color:${l.tipo==='entrada'?'var(--green)':'var(--red)'};">${l.tipo==='entrada'?'+':'-'}${fmt(l.valor)}</div>
       <button class="lanc-del" onclick="delSaida(${l.id})">✕</button>
     </div>`).join('');
 }
@@ -2112,7 +2162,7 @@ function sugerirMes(){
     if(sel){for(let o of sel.options){if(o.value===key){o.selected=true;break;}}}
   }
 }
-function setDates(){const t=today();['d-data','saida-data','prov-data','prov-e-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=t;});}
+function setDates(){const t=today();['d-data','saida-data','prov-data','prov-e-data','entrada-cc-data'].forEach(id=>{const el=document.getElementById(id);if(el&&!el.value)el.value=t;});}
 setDates();
 // Carregar dados da nuvem ao abrir
 carregarDados();
