@@ -992,14 +992,32 @@ async function carregarDados() {
     S.saidasCC = saidas.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao}));
     S.prov = prov.map(l => ({id:l.id,data:l.data,mes:l.mes||(l.data||'').substring(0,7),cat:l.cat,valor:l.valor,desc:l.descricao,tipo:l.tipo}));
     S.cmvs = (cmvs||[]).map(l => ({id:l.id,semana:l.semana,mes:l.mes,centro:l.centro,ei:l.ei,compras:l.compras,desp:l.desperdicio,ef:l.ef,fat:l.faturamento,cmv:l.cmv_valor,pct:l.cmv_pct}));
-    // Mesclar com dados locais que ainda não foram para o banco
+    // Mesclar locais pendentes e reenviar ao Supabase
     const local = JSON.parse(localStorage.getItem('gbb_v4')||'null');
     if(local) {
-      if(local.dias) local.dias.filter(d=>!idsDias.has(d.id)).forEach(d=>S.dias.push(d));
-      if(local.semanais) local.semanais.filter(l=>!idsSemanais.has(l.id)).forEach(l=>S.semanais.push(l));
-      if(local.saidasCC) local.saidasCC.filter(l=>!idsSaidas.has(l.id)).forEach(l=>S.saidasCC.push(l));
-      if(local.prov) local.prov.filter(l=>!idsProv.has(l.id)).forEach(l=>S.prov.push(l));
-      if(local.cmvs) local.cmvs.filter(l=>!idsCmvs.has(l.id)).forEach(l=>S.cmvs.push(l));
+      const diasPend=(local.dias||[]).filter(d=>!idsDias.has(d.id));
+      diasPend.forEach(d=>{
+        S.dias.push(d);
+        sbInsert('dias',{id:d.id,data:d.data,mes:d.mes,fat:d.fat,rec_fin:d.recFin||0,
+          custo_taxa:(d.custos&&d.custos.taxa)||0,custo_taxa_coz:(d.custos&&d.custos.taxaCoz)||0,
+          custo_taxa_bol:(d.custos&&d.custos.taxaBol)||0,custo_taxa_estac:(d.custos&&d.custos.taxaEstac)||0,
+          custo_taxa_bar:(d.custos&&d.custos.taxaBar)||0,custo_outros:(d.custos&&d.custos.outros)||0,
+          custo_taxa_cartao:(d.custos&&d.custos.taxaCartao)||0,
+          total_custos:d.totalCustos||0,sobrou:d.sobrou||0,
+          ret_prov:d.retProv||0,ret_taxa:d.retTaxa||0,ret_bol:d.retBol||0,total_ret:d.totalRet||0,
+          adultos:d.adultos||0,criancas:d.criancas||0,ticket:d.ticket||0
+        }).then(()=>console.log('Dia '+d.data+' enviado')).catch(e=>console.warn('Falha dia',e));
+      });
+      const semPend=(local.semanais||[]).filter(l=>!idsSemanais.has(l.id));
+      semPend.forEach(l=>{S.semanais.push(l);sbInsert('semanais',{id:l.id,data:l.data,mes:l.mes||(l.data&&l.data.substring(0,7)),periodo:l.periodo,cat:l.cat,valor:l.valor}).catch(e=>console.warn(e));});
+      const saidasPend=(local.saidasCC||[]).filter(l=>!idsSaidas.has(l.id));
+      saidasPend.forEach(l=>{S.saidasCC.push(l);sbInsert('saidas_cc',{id:l.id,data:l.data,mes:l.mes||(l.data&&l.data.substring(0,7)),cat:l.cat,valor:l.valor,descricao:l.desc}).catch(e=>console.warn(e));});
+      const provPend=(local.prov||[]).filter(l=>!idsProv.has(l.id));
+      provPend.forEach(l=>{S.prov.push(l);sbInsert('provisionada',{id:l.id,data:l.data,mes:l.mes||(l.data&&l.data.substring(0,7)),cat:l.cat,valor:l.valor,descricao:l.desc,tipo:l.tipo}).catch(e=>console.warn(e));});
+      const cmvsPend=(local.cmvs||[]).filter(l=>!idsCmvs.has(l.id));
+      cmvsPend.forEach(l=>{S.cmvs.push(l);sbInsert('cmv',{id:l.id,semana:l.semana,centro:l.centro,mes:l.mes,ei:l.ei,compras:l.compras,desperdicio:l.desp,ef:l.ef,faturamento:l.fat,cmv_valor:l.cmv,cmv_pct:l.pct}).catch(e=>console.warn(e));});
+      const tot=diasPend.length+semPend.length+saidasPend.length+provPend.length+cmvsPend.length;
+      if(tot>0) toast('☁️ Enviando '+tot+' item(ns) pendente(s) ao banco...','success');
     }
 
     // Recalcular saldos
