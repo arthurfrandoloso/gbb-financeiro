@@ -1146,6 +1146,7 @@ function lancarDia(){
     id:dia.id, data:dia.data, mes:dia.mes, fat:dia.fat, rec_fin:dia.recFin||0,
     custo_taxa:custos.taxa, custo_taxa_coz:custos.taxaCoz, custo_taxa_bol:custos.taxaBol,
     custo_taxa_estac:custos.taxaEstac, custo_taxa_bar:custos.taxaBar, custo_outros:custos.outros,
+    custo_taxa_cartao:custos.taxaCartao||0,
     total_custos:totalCustos, sobrou:sobrou,
     ret_prov:retProv, ret_taxa:retTaxa, ret_bol:retBol, total_ret:totalRet,
     adultos:dia.adultos, criancas:dia.criancas, ticket:dia.ticket
@@ -1300,29 +1301,38 @@ function atualizarSaldos(){
 
 // DASHBOARD
 function renderDashboard(){
-  const fatDia=S.dias.reduce((s,d)=>s+d.fat,0);
-  // Público e ticket
-  const totalAdultos=S.dias.reduce((s,d)=>s+(d.adultos||0),0);
-  const totalCriancas=S.dias.reduce((s,d)=>s+(d.criancas||0),0);
+  const mes=S.mesFiltro||'2026-04';
+  const diasMes=S.dias.filter(d=>(d.mes||d.data.substring(0,7))===mes);
+  const semMes=S.saidasCC.filter(l=>(l.mes||l.data||'').substring(0,7)===mes);
+  // Faturamento: semanal por centro é a fonte oficial; dias como fallback
+  const fatSem=S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mes).reduce((s,l)=>s+l.valor,0);
+  const fatDia=diasMes.reduce((s,d)=>s+d.fat,0);
+  const totalFat=fatSem>0?fatSem:fatDia;
+  // Público e ticket (sempre dos dias)
+  const totalAdultos=diasMes.reduce((s,d)=>s+(d.adultos||0),0);
+  const totalCriancas=diasMes.reduce((s,d)=>s+(d.criancas||0),0);
   const ticketMedio=totalAdultos>0?(fatDia/totalAdultos):0;
-  // Atualizar KPIs público no dashboard se existir
   const elAd=document.getElementById('d-adultos-kpi');if(elAd) elAd.textContent=totalAdultos;
   const elCr=document.getElementById('d-criancas-kpi');if(elCr) elCr.textContent=totalCriancas;
   const elTk=document.getElementById('d-ticket-kpi');
   if(elTk){elTk.textContent=totalAdultos>0?fmt(ticketMedio):'—';elTk.style.color=ticketMedio>=85?'var(--green)':ticketMedio>=75?'var(--brand)':'var(--red)';}
-  const fatSem=S.semanais.reduce((s,l)=>s+l.valor,0);
-  const totalFat=fatDia+fatSem;
-  const custosDia=S.dias.reduce((s,d)=>s+d.totalCustos,0);
-  const saidas=S.saidasCC.reduce((s,l)=>s+l.valor,0);
-  const retDia=S.dias.reduce((s,d)=>s+d.totalRet,0);
-  const margem=totalFat>0?((S.saldoCC-CC_INI)/totalFat*100):0;
+  const custosDia=diasMes.reduce((s,d)=>s+d.totalCustos,0);
+  const saidas=semMes.reduce((s,l)=>s+l.valor,0);
+  const retDia=diasMes.reduce((s,d)=>s+d.totalRet,0);
+  const provGasto=S.prov.filter(l=>l.tipo==='saida'&&(l.mes||l.data||'').substring(0,7)===mes).reduce((s,l)=>s+l.valor,0);
+  const lucro=totalFat-(custosDia+saidas);
+  const margem=totalFat>0?(lucro/totalFat*100):0;
   sv('d-rec',totalFat,'var(--brand)');sv('d-fat',totalFat,'var(--brand)');sv('d-custos',custosDia+saidas,'var(--red)');
-  sv('d-retiradas',retDia,'var(--green)');sv('d-prov-gasto',somaT(S.prov,'saida'),'var(--red)');
+  sv('d-retiradas',retDia,'var(--green)');sv('d-prov-gasto',provGasto,'var(--red)');
   // KPI saldo CC
   const elSaldoKpi=document.getElementById('d-saldo-cc-kpi');
   if(elSaldoKpi){elSaldoKpi.textContent=fmt(S.saldoCC);if(elSaldoKpi.dataset.orig)elSaldoKpi.dataset.orig=fmt(S.saldoCC);}
   const mEl=document.getElementById('d-margem');if(mEl){mEl.textContent=totalFat>0?margem.toFixed(1)+'%':'—';mEl.style.color=margem>=15?'var(--green)':margem>=8?'var(--brand)':'var(--red)';}
-  const todos=[...S.dias.map(d=>({id:d.id,desc:'Fechamento '+d.data,meta:'Fat. '+fmt(d.fat)+' · Sobrou '+fmt(d.sobrou),valor:d.sobrou,entrada:d.sobrou>=0})),...S.semanais.map(l=>({id:l.id,desc:l.cat+' · '+(l.periodo||''),meta:l.data,valor:l.valor,entrada:true})),...S.saidasCC.map(l=>({id:l.id,desc:l.desc||l.cat,meta:l.cat+' · '+l.data,valor:l.valor,entrada:false}))].sort((a,b)=>b.id-a.id).slice(0,6);
+  const todos=[
+    ...diasMes.map(d=>({id:d.id,desc:'Fechamento '+d.data,meta:'Fat. '+fmt(d.fat)+' · Sobrou '+fmt(d.sobrou),valor:d.sobrou,entrada:d.sobrou>=0})),
+    ...S.semanais.filter(l=>(l.mes||l.data||'').substring(0,7)===mes).map(l=>({id:l.id,desc:l.cat+' · '+(l.periodo||''),meta:l.data,valor:l.valor,entrada:true})),
+    ...semMes.map(l=>({id:l.id,desc:l.desc||l.cat,meta:l.cat+' · '+l.data,valor:l.valor,entrada:false}))
+  ].sort((a,b)=>b.id-a.id).slice(0,6);
   const ul=document.getElementById('dash-ultimos');
   if(!todos.length){ul.innerHTML='<p style="font-size:12px;color:var(--text-3);text-align:center;padding:12px 0;">Nenhum lançamento ainda</p>';}
   else ul.innerHTML=todos.map(l=>`<div class="lancamento-item"><div class="lanc-info"><div class="lanc-desc">${l.desc}</div><div class="lanc-meta">${l.meta}</div></div><div class="lanc-valor" style="color:${l.entrada?'var(--green)':'var(--red)'};">${l.entrada?'+':'-'}${fmt(l.valor)}</div></div>`).join('');
